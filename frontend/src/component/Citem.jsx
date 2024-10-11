@@ -1,24 +1,11 @@
 import { useState, useEffect } from 'react';
 import BulkUpload from './BulkUpload'
-const SearchBar = ({ searchImei, setSearchImei, onSearch }) => (
-  <div className="mb-4 flex items-center space-x-2">
-    <input
-      type="text"
-      value={searchImei}
-      onChange={(e) => setSearchImei(e.target.value)}
-      placeholder="Search by IMEI"
-      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-    />
-    <button
-      onClick={onSearch}
-      className="border-2 border-black bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-150"
-    >
-      Search
-    </button>
-  </div>
-); 
+import useSessionStorage from './useSessionStorage';
+
 // Sub-component for listing campaigns
+
 const CampaignList = ({ campaigns, onCreate, onDelete,onDown }) => (
+  
   <ul className="list-disc ">
     {campaigns.map((campaign) => (
       <li key={campaign._id} className="flex gap-3  mb-2 list-disc">
@@ -148,9 +135,10 @@ const CampaignForm = ({
     </form>
   </div>
 );
-
 // Sub-component for displaying campaign items
+
 const CitemsTable = ({
+  role,
   citems,
   onEdit,
   onDelete,
@@ -164,7 +152,7 @@ const CitemsTable = ({
   onUpdate,
   onCancelUpdate,
 }) => (
-  
+ 
   <div className="mt-6 overflow-x-auto">
     <h3 className="text-sm font-bold">Citems for {citems[0]?.Campaign_Name}</h3>
     <table className="min-w-[300px] mt-4 border-collapse border border-gray-300 bg-white shadow-lg">
@@ -172,8 +160,8 @@ const CitemsTable = ({
         <tr>
           <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Product</th>
           <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Winner IMEI</th>
-          <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Wheel Prize</th>
-          <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Scratch Prize</th>
+         {role=='main'? <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Wheel Prize</th>:null}
+         {role=='main'? <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Scratch Prize</th>:null}
           <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Claimed on</th>
           <th className="border border-gray-300 px-4 py-2 text-left font-semibold">WinnerName</th>
           <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Added on</th>
@@ -190,22 +178,22 @@ const CitemsTable = ({
             >
               <td className="border border-gray-300 px-4 py-2">{item.Selectedproduct}</td>
               <td className="border border-gray-300 px-4 py-2">{item.WinnerImei}</td>
-              <td className="border border-gray-300 px-4 py-2">{item.Wheelprize}</td>
-              <td className="border border-gray-300 px-4 py-2">{item.Scratchprize}</td>
+             {role=='main'?<td className="border border-gray-300 px-4 py-2">{item.Wheelprize}</td> :null} 
+             {role=='main'?<td className="border border-gray-300 px-4 py-2">{item.Scratchprize}</td> :null} 
               <td className="border border-gray-300 px-4 py-2">{item.Claimedon? new Date(item.Claimedon).toLocaleDateString(): '-'}</td>
               <td className="border border-gray-300 px-4 py-2">{item.WinnerName? item.WinnerName:"-"}</td>
               <td className="border border-gray-300 px-4 py-2">
                 {item.Addedon ? new Date(item.Addedon).toLocaleDateString() : '-'}
               </td>
               <td className="border border-gray-300 px-4 py-2">
-                <div className="flex space-x-2">
-                  <button
-                    className="border-2 border-black bg-green-500 text-white px-2 py-1 rounded-lg hover:scale-105 transition-transform duration-150"
-                    onClick={() => onEdit(item)}
-                    aria-label={`Edit item with IMEI ${item.WinnerImei}`}
-                  >
-                    Update
-                  </button>
+                <div className="flex space-x-2">{role=='main'?<button
+                  className="border-2 border-black bg-green-500 text-white px-2 py-1 rounded-lg hover:scale-105 transition-transform duration-150"
+                  onClick={() => onEdit(item)}
+                  aria-label={`Edit item with IMEI ${item.WinnerImei}`}
+                >
+                  Update
+                </button>:null}
+                  
                   <button
                     className="border-2 border-black bg-red-500 text-white px-2 py-1 rounded-lg hover:scale-105 transition-transform duration-150"
                     onClick={() => onDelete(item.Campaign_Name,item.WinnerImei)}
@@ -280,11 +268,12 @@ const CitemsTable = ({
 );
 
 const Citem = () => {
+  const [role]=useSessionStorage('role')
   // Track if there's more data for "next" pagination
 const [isFirstPage, setIsFirstPage] = useState(true); // Track if on the first page
 
   const [csvFile, setCsvFile] = useState(null);
-  const [all,setall]=useState([])
+  
   const [currentPage,setcurrentPage]=useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
@@ -611,6 +600,7 @@ const handleCreateClick = async (campaign, direction = "next") => {
             </button>
           </div>
           <CitemsTable
+          role={role}
             citems={citems}
             onEdit={handleInitiateUpdate}
             onDelete={handleDelete}

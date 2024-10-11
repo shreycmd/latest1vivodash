@@ -10,7 +10,10 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!email || !password) {
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
       setError('Please enter both email and password.');
       return;
     }
@@ -19,15 +22,15 @@ const Login = () => {
       const response = await fetch('http://localhost:3000/Admin'); 
       const data = await response.json();
 
-      const admin = data.data.find(admin => admin.Mail === email && admin.password === password);
+      const admin = data.data.find(admin => admin.Mail === trimmedEmail && admin.password === trimmedPassword);
 
       if (admin) {
-        setError('');
-        // Store admin role and email in localStorage
-        localStorage.setItem('role', admin.role);
-        localStorage.setItem('email', admin.Mail);
+        setError(''); // Clear previous error messages
+        // Store admin role and email in sessionStorage
+        sessionStorage.setItem('role', admin.role);
+        sessionStorage.setItem('email', admin.Mail);
 
-        navigate('/app');
+        navigate('/app'); // Redirect to the app
       } else {
         setError('Invalid email or password.');
       }
@@ -36,8 +39,11 @@ const Login = () => {
       setError('An error occurred. Please try again later.');
     }
 
-    setEmail('');
-    setPassword('');
+    // Reset fields only on successful login
+    if (error === '') {
+      setEmail('');
+      setPassword('');
+    }
   };
 
   return (

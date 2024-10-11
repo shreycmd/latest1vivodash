@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import useSessionStorage from "./useSessionStorage";
 
 const Admin = () => {
   const [err, setErr] = useState("");
@@ -9,9 +10,14 @@ const Admin = () => {
     role: "user",
   });
   const [editingUser, setEditingUser] = useState(null);
+  const [editedUserData, setEditedUserData] = useState({
+    Mail: "",
+    password: "",
+    role: "user",
+  });
 
   // Get the logged-in user's role from localStorage
-  const userRole = localStorage.getItem("role");
+const role=useSessionStorage('role')
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -31,9 +37,14 @@ const Admin = () => {
     setNewUser({ ...newUser, [name]: value });
   };
 
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditedUserData({ ...editedUserData, [name]: value });
+  };
+
   const addUser = async () => {
     try {
-      if (userRole !== "admin") {
+      if (role =='user') {
         setErr("Only admins can add users.");
         return;
       }
@@ -56,23 +67,31 @@ const Admin = () => {
     }
   };
 
-  const updateUserRole = async (Mail, role) => {
-    if (userRole !== "admin") {
+  const updateUserRole = async () => {
+    if (role == "user") {
       setErr("Only admins can update roles.");
       return;
     }
+
+    if (!editingUser) {
+      setErr("No user is being edited.");
+      return;
+    }
+
     try {
-      const response = await fetch(`http://localhost:3000/Admin/${Mail}`, {
+      const response = await fetch(`http://localhost:3000/Admin/${editedUserData.Mail}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ role }),
+        body: JSON.stringify(editedUserData),
       });
       const res = await response.json();
       if (response.ok) {
-        setUsers(users.map((user) => (user.Mail === Mail ? res.data : user)));
+        // Update the user list correctly
+        setUsers(users.map((user) => (user.Mail === editedUserData.Mail ? { ...user, ...editedUserData } : user)));
         setEditingUser(null);
+        setEditedUserData({ Mail: "", password: "", role: "user" });
       } else {
         setErr(res.message);
       }
@@ -82,7 +101,7 @@ const Admin = () => {
   };
 
   const deleteUser = async (Mail) => {
-    if (userRole !== "admin") {
+    if (role == "user") {
       setErr("Only admins can delete users.");
       return;
     }
@@ -101,10 +120,15 @@ const Admin = () => {
     }
   };
 
+  const handleEdit = (user) => {
+    setEditingUser(user.Mail);
+    setEditedUserData(user); // Pre-fill the form with the user's current data
+  };
+
   return (
     <div className="p-4">
       {err && <div className="text-red-500">Error: {err}</div>}
-      {userRole === "admin" && (
+      {role != "user" && (
         <div className="mb-4">
           <h2 className="text-lg font-bold mb-2">Add New User</h2>
           <input
@@ -141,8 +165,7 @@ const Admin = () => {
         </div>
       )}
 
-      {/* Only show the table if the user is an admin */}
-      {userRole === "admin" && (
+      {role != "user" && (
         <table className="min-w-full table-auto border-collapse shadow-lg bg-white rounded-lg overflow-hidden">
           <thead>
             <tr className="bg-gray-800 text-white">
@@ -153,17 +176,40 @@ const Admin = () => {
             </tr>
           </thead>
           <tbody>
-            {users.map((user, index) => (
-              <tr key={index} className="border-b">
-                <td className="py-3 px-4">{user.Mail}</td>
-                <td className="py-3 px-4">{user.password}</td>
+            {users.map((user) => (
+              <tr key={user.Mail} className="border-b">
+                <td className="py-3 px-4">
+                  {editingUser === user.Mail ? (
+                    <input
+                      type="email"
+                      name="Mail"
+                      value={editedUserData.Mail}
+                      onChange={handleEditInputChange} // Allow editing of email
+                      className="border p-2 rounded"
+                    />
+                  ) : (
+                    user.Mail
+                  )}
+                </td>
+                <td className="py-3 px-4">
+                  {editingUser === user.Mail ? (
+                    <input
+                      type="password"
+                      name="password"
+                      value={editedUserData.password}
+                      onChange={handleEditInputChange} // Allow editing of password
+                      className="border p-2 rounded"
+                    />
+                  ) : (
+                    "********" // Hide password for display
+                  )}
+                </td>
                 <td className="py-3 px-4">
                   {editingUser === user.Mail ? (
                     <select
-                      value={user.role}
-                      onChange={(e) =>
-                        updateUserRole(user.Mail, e.target.value)
-                      }
+                      name="role"
+                      value={editedUserData.role}
+                      onChange={handleEditInputChange}
                       className="border p-2 rounded"
                     >
                       <option value="user">User</option>
@@ -175,18 +221,26 @@ const Admin = () => {
                 </td>
                 <td className="py-3 px-4">
                   {editingUser === user.Mail ? (
-                    <button
-                      className="bg-gray-500 text-white px-4 py-2 rounded"
-                      onClick={() => setEditingUser(null)}
-                    >
-                      Cancel
-                    </button>
+                    <>
+                      <button
+                        className="bg-green-500 text-white px-4 py-2 rounded mr-2"
+                        onClick={updateUserRole}
+                      >
+                        Save
+                      </button>
+                      <button
+                        className="bg-gray-500 text-white px-4 py-2 rounded"
+                        onClick={() => setEditingUser(null)}
+                      >
+                        Cancel
+                      </button>
+                    </>
                   ) : (
-                    userRole === "admin" && (
+                    role != "user" && (
                       <>
                         <button
                           className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
-                          onClick={() => setEditingUser(user.Mail)}
+                          onClick={() => handleEdit(user)}
                         >
                           Edit
                         </button>

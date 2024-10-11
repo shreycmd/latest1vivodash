@@ -13,30 +13,12 @@ const { p_object } = require("./types");
 const { product, campaign, Citem, Admin } = require("./db");
 
 app.use(express.json())
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-];
-
-// CORS configuration
 app.use(cors({
-  origin: function (origin, callback) {
-    console.log('Origin:', origin); // Log the incoming origin for debugging
-    if (!origin) {
-      return callback(null, true); // Allow requests with no origin (like mobile apps)
-    }
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true); // Allow the request
-    } else {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false); // Deny the request
-    }
-  },
+  origin: ['http://localhost:5173', 'http://localhost:5174'], // List all allowed origins
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true // Allow credentials to be sent
 }));
-
 
 //middleware for converting
 
@@ -88,7 +70,7 @@ app.use(cors({
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      if (user.role === "admin") {
+      if (user.role === "main") {
         next(); // Proceed if the user is an admin
       } else {
         return res.status(403).json({ message: "Access denied. Admins only." });
@@ -152,36 +134,38 @@ app.post("/Admin",async (req, res) => {
     }
 });
 
-app.put("/Admin/:Mail",async (req, res) => {
-    try {
-        const { Mail } = req.params;
-        const { role } = req.body;
+app.put("/Admin/:Mail", async (req, res) => {
+  try {
+      const { Mail } = req.params;
+      const { Mail: newMail, role, password } = req.body; // Destructure all required fields from req.body
 
-        const updatedUser = await Admin.findOneAndUpdate(
-            { Mail },
-            { role },
-            { new: true }
-        );
+      // Find the user and update their information
+      const updatedUser = await Admin.findOneAndUpdate(
+          { Mail }, // Find user by old email
+          { Mail: newMail, role, password }, // Update mail, role, and password
+          { new: true } // Return the updated user
+      );
 
-        if (!updatedUser) {
-            return res.status(404).json({
-                message: "User not found",
-            });
-        }
+      if (!updatedUser) {
+          return res.status(404).json({
+              message: "User not found",
+          });
+      }
 
-        res.status(200).json({
-            message: "User updated successfully",
-            data: updatedUser,
-        });
-    } catch (error) {
-        return res.status(500).json({
-            message: "User not updated",
-            error: error.message,
-        });
-    }
+      res.status(200).json({
+          message: "User updated successfully",
+          data: updatedUser,
+      });
+  } catch (error) {
+      return res.status(500).json({
+          message: "User not updated",
+          error: error.message,
+      });
+  }
 });
 
-app.delete("/Admin/:Mail", checkRole,async (req, res) => {
+
+app.delete("/Admin/:Mail",async (req, res) => {
     try {
         const { Mail } = req.params;
 
@@ -308,7 +292,7 @@ app.put("/ncitems/:cname/:Imei", upload.single('image'), async (req, res) => {
    
     const { WinnerImei, Wheelprize, WinnerName, Scratchprize, Status, location,Claimedon } = req.body;  
     
-    console.log(req.body); // Logging the request body for debugging
+   // Logging the request body for debugging
 
     // Check if neither Status nor Claimedon are provided
     if (!Status && !Claimedon) {
@@ -402,7 +386,7 @@ app.get("/citems",async (req,res)=>{
         const show =await Citem.find({
          
         })
-        console.log(show)
+        
         return res.status(200).json({
             message:"fetched successfully",
             data:show
@@ -937,7 +921,7 @@ async function processBatch(cmodel, batch, cname, prizeCounts) {
 const unlinkFile = async (filePath) => {
   try {
     await fs.promises.unlink(filePath);
-    console.log(`Successfully deleted ${filePath}`);
+ 
   } catch (err) {
     console.error(`Error deleting ${filePath}:`, err);
   }
@@ -1011,7 +995,7 @@ app.post('/upload-products', upload.single('file'), (req, res) => {
   }
 
   const uid = req.body.uniqueIdentifier;
-console.log("reached here",uid)
+
   fs.createReadStream(req.file.path)
     .pipe(csv())
     .on('data', (data) => {
@@ -1121,8 +1105,7 @@ app.get('/export-wcitems', async (req, res) => {
           csvStream.write({
              WinnerName:item.WinnerName,
               WinnerImei: item.WinnerImei,
-             location:item.location,
-              
+              location:item.location,
               Claimedon: item.Claimedon ? new Date(item.Claimedon).toLocaleDateString() : '',
               
           });
@@ -1148,6 +1131,7 @@ app.get('/export-wcitems', async (req, res) => {
 app.get('/search-imei/:cname/:imei', async (req, res) => {
   const { imei ,cname} = req.params;
   const name=getCampaignModel(cname)
+
   try {
     const results = await name.find({
       // Modify this to match the fields you want to search
@@ -1160,7 +1144,22 @@ app.get('/search-imei/:cname/:imei', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+app.get('/search-wimei/:cname/:imei', async (req, res) => {
+  const { imei ,cname} = req.params;
+  const name=getWinModel(`win_${cname}`)
+  
+  try {
+    const results = await name.find({
+      // Modify this to match the fields you want to search
+      WinnerImei: { $regex: imei, $options: 'i' }
+    });
 
+    res.json({ data: results });
+  } catch (error) {
+    console.error('Error fetching search results:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 app.get("/uniqueProducts/:cname", async (req, res) => {
   const { cname } = req.params;
   const model = getCampaignModel(cname);
@@ -1236,7 +1235,7 @@ app.post("/nc/:cname", uploading.single('invoice'), async (req, res) => {
   const WinModel = getWinModel(collectionName);
   
   const { WinnerImei, Claimedon, WinnerName, Prize,location } = req.body;
-console.log(WinnerImei)
+
   // Get the path of the uploaded file
   const invoicePath = req.file ? req.file.path : null;
 
