@@ -98,7 +98,7 @@ app.use(cors({
 });
 
 app.get("/",(req,res)=>{
-  req.send("server up");
+  res.send("server up");
 });
 
   app.get("/Admin", async (req, res) => {
