@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
-import Layout from './component/layout';
+import Layout from './component/Layout';
 import Product from './component/Products/Product';
 import Citem from './component/Citem';
 import Campaign from './component/Campaign';
