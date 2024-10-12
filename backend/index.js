@@ -14,7 +14,7 @@ const { product, campaign, Citem, Admin } = require("./db");
 
 app.use(express.json())
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174'], // List all allowed origins
+  origin: ["*"], // List all allowed origins
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true // Allow credentials to be sent
