@@ -13,12 +13,7 @@ const { p_object } = require("./types");
 const { product, campaign, Citem, Admin } = require("./db");
 
 app.use(express.json())
-app.use(cors({
-  origin: ["*"], // List all allowed origins
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true // Allow credentials to be sent
-}));
+app.use(cors());
 
 //middleware for converting
 
