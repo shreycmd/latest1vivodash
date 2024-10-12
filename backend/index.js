@@ -96,6 +96,11 @@ app.use(cors({
       });
   }
 });
+
+app.get("/",(req,res)=>{
+  req.send("server up");
+});
+
   app.get("/Admin", async (req, res) => {
     try {
         const result = await Admin.find({});
@@ -1292,6 +1297,6 @@ app.get("/campaigndetails/:cname", async (req, res) => {
 
 
 // Start the server
-app.listen(3000, () => {
+app.listen('0.0.0.0',3000, () => {
   console.log("Server is running on port 3000");
 });

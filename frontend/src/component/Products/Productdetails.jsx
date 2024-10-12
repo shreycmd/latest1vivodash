@@ -26,7 +26,7 @@ const Productdetails = ({ products , totalPages , currentPage , setCurrentPage }
   // Function to handle the PUT request for updating the product
   const updateProduct = async (Name) => {
     try {
-      const response = await fetch(`http://localhost:3000/product/${Name}`, {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/product/${Name}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ const Productdetails = ({ products , totalPages , currentPage , setCurrentPage }
   // Function to handle the DELETE request
   const deleteProduct = async (Name) => {
     try {
-      const response = await fetch(`http://localhost:3000/product/${Name}`, {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/product/${Name}`, {
         method: 'DELETE',
       });
 

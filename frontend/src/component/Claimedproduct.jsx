@@ -6,7 +6,7 @@ const Claimedproduct = ({ claimedProducts, cmpname }) => {
   const [searchImei, setSearchImei] = useState(''); // Search term state
 
   const displayImg = (rl) => {
-    setSelectedImage(`http://localhost:3000/${rl}`);
+    setSelectedImage(import.meta.env.VITE_BACKEND_URL+`/${rl}`);
   };
 
   const handleSearch = async () => {
@@ -17,7 +17,7 @@ const Claimedproduct = ({ claimedProducts, cmpname }) => {
       setCitems(claimedProducts);
     } else {
       try {
-        const response = await fetch(`http://localhost:3000/search-wimei/${cmpname}/${searchTerm}`);
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/search-wimei/${cmpname}/${searchTerm}`);
         const result = await response.json();
 
         if (response.ok) {
@@ -35,7 +35,7 @@ const Claimedproduct = ({ claimedProducts, cmpname }) => {
 
   const handleDownload = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/export-wcitems?condition=win_${cmpname}`, {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/export-wcitems?condition=win_${cmpname}`, {
         method: 'GET',
       });
 

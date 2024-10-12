@@ -298,7 +298,7 @@ const [hasMoreData, setHasMoreData] = useState(true);
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
-        const response = await fetch('http://localhost:3000/campaign');
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/campaign');
         const result = await response.json();
         console.log(result)
         if (response.ok) {
@@ -328,7 +328,7 @@ const [hasMoreData, setHasMoreData] = useState(true);
     else{
     try {
       
-      const response = await fetch(`http://localhost:3000/search-imei/${selectedCampaign.Name}/${searchTerm}`);
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/search-imei/${selectedCampaign.Name}/${searchTerm}`);
       const result = await response.json();
       
       if (response.ok) {
@@ -356,7 +356,7 @@ const handleCreateClick = async (campaign, direction = "next") => {
 
   try {
       const response = await fetch(
-          `http://localhost:3000/citemnew/${campaign.Name}?lastId=${lastId || ""}&direction=${direction}`
+          import.meta.env.VITE_BACKEND_URL+`/citemnew/${campaign.Name}?lastId=${lastId || ""}&direction=${direction}`
       );
       const result = await response.json();
 
@@ -392,7 +392,7 @@ const handleCreateClick = async (campaign, direction = "next") => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:3000/citems', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/citems', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -430,7 +430,7 @@ const handleCreateClick = async (campaign, direction = "next") => {
     console.log("edit scratch prize",)
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:3000/ncitems/${selectedCampaign.Name}/${editingItemImei}`, {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/ncitems/${selectedCampaign.Name}/${editingItemImei}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -468,7 +468,7 @@ const handleCreateClick = async (campaign, direction = "next") => {
   const handleDelc = async (cname) => {
     if (window.confirm(`Are you sure you want to delete the campaign "${cname}"?`)) {
       try {
-        const response = await fetch(`http://localhost:3000/campaign/${cname}`, {
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/campaign/${cname}`, {
           method: 'DELETE',
         });
         const result = await response.json();
@@ -490,7 +490,7 @@ const handleCreateClick = async (campaign, direction = "next") => {
   };
   const handleDownload = async (campaignName) => {
     try {
-      const response = await fetch(`http://localhost:3000/export-citems?condition=${campaignName}`, {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/export-citems?condition=${campaignName}`, {
         method: 'GET',
       });
 
@@ -518,7 +518,7 @@ const handleCreateClick = async (campaign, direction = "next") => {
   const handleDelete = async (campaignName,WinnerImei) => {
     if (window.confirm(`Are you sure you want to delete the item with IMEI "${WinnerImei}"?`)) {
       try {
-        const response = await fetch(`http://localhost:3000/ncitems/${campaignName}/${WinnerImei}`, {
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/ncitems/${campaignName}/${WinnerImei}`, {
           method: 'DELETE',
         });
 

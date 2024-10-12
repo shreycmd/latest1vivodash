@@ -22,7 +22,7 @@ const role=useSessionStorage('role')
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const result = await fetch("http://localhost:3000/Admin");
+        const result = await fetch(import.meta.env.VITE_BACKEND_URL+"/Admin");
         const res = await result.json();
         setUsers(res.data);
       } catch (error) {
@@ -48,7 +48,7 @@ const role=useSessionStorage('role')
         setErr("Only admins can add users.");
         return;
       }
-      const response = await fetch("http://localhost:3000/Admin", {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+"/Admin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -79,7 +79,7 @@ const role=useSessionStorage('role')
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/Admin/${editedUserData.Mail}`, {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/Admin/${editedUserData.Mail}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -106,7 +106,7 @@ const role=useSessionStorage('role')
       return;
     }
     try {
-      const response = await fetch(`http://localhost:3000/Admin/${Mail}`, {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/Admin/${Mail}`, {
         method: "DELETE",
       });
       const res = await response.json();

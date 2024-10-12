@@ -30,7 +30,7 @@ const Dashboard = () => {
     const fetchDetails = async () => {
       setLoading(true);
       try {
-        const response = await fetch("http://localhost:3000/dashboard");
+        const response = await fetch(import.meta.env.VITE_BACKEND_URL+"/dashboard");
         const res = await response.json();
 
         if (response.ok) {
@@ -56,7 +56,7 @@ const Dashboard = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `http://localhost:3000/campaigndetails/${campaignName}?page=${page}&limit=${limit}`
+        import.meta.env.VITE_BACKEND_URL+`/campaigndetails/${campaignName}?page=${page}&limit=${limit}`
       );
       const res = await response.json();
 

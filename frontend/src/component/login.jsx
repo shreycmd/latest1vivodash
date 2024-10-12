@@ -19,7 +19,7 @@ const Login = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/Admin'); 
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/Admin'); 
       const data = await response.json();
 
       const admin = data.data.find(admin => admin.Mail === trimmedEmail && admin.password === trimmedPassword);

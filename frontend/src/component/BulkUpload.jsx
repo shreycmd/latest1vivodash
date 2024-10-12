@@ -63,7 +63,7 @@ console.log("Name of the camp",campaignName)
 
     // Make the POST request
     try {
-      const response = await fetch('http://localhost:3000/upload-citem', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/upload-citem', {
         method: 'POST',
         body: formData,
       });
