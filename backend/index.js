@@ -14,7 +14,7 @@ const { product, campaign, Citem, Admin } = require("./db");
 
 app.use(express.json())
 app.use(cors({
-  origin: ["http://88.222.214.8"], // List all allowed origins
+  origin: ["https://88.222.214.8", "https://admin.jkvivo.in/"], // List all allowed origins
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true // Allow credentials to be sent
