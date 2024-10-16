@@ -5,30 +5,41 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const trimmedEmail = email.trim();
+    
     const trimmedPassword = password.trim();
 
     if (!trimmedEmail || !trimmedPassword) {
+    
       setError('Please enter both email and password.');
       return;
     }
-
+    const User = {
+      Mail: trimmedEmail,
+      password: trimmedPassword,
+    };
     try {
-      const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/Admin'); 
-      const data = await response.json();
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(User),
+      }); 
+      const data =await response.json();
 
-      const admin = data.data.find(admin => admin.Mail === trimmedEmail && admin.password === trimmedPassword);
-
-      if (admin) {
+      if (response.ok) {
         setError(''); // Clear previous error messages
         // Store admin role and email in sessionStorage
-        sessionStorage.setItem('role', admin.role);
-        sessionStorage.setItem('email', admin.Mail);
+        localStorage.setItem('token',data.token)
+        sessionStorage.setItem('role', data.role);
+        sessionStorage.setItem('email', data.Mail);
 
         navigate('/app'); // Redirect to the app
       } else {

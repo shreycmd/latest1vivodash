@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import fetchwithauth from './token';
 
 const BulkUpload = ({ visible, onFileChange, onClose,campaignName }) => {
   const [wheelPrizes, setWheelPrizes] = useState([{ name: '', quantity: '' }]);
@@ -63,7 +64,7 @@ console.log("Name of the camp",campaignName)
 
     // Make the POST request
     try {
-      const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/upload-citem', {
+      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+'/upload-citem', {
         method: 'POST',
         body: formData,
       });

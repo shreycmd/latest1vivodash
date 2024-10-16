@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import useSessionStorage from "./useSessionStorage";
+import fetchwithauth from "./token";
 
 const Admin = () => {
   const [err, setErr] = useState("");
@@ -22,7 +23,7 @@ const role=useSessionStorage('role')
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const result = await fetch(import.meta.env.VITE_BACKEND_URL+"/Admin");
+        const result = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+"/Admin");
         const res = await result.json();
         setUsers(res.data);
       } catch (error) {
@@ -48,7 +49,7 @@ const role=useSessionStorage('role')
         setErr("Only admins can add users.");
         return;
       }
-      const response = await fetch(import.meta.env.VITE_BACKEND_URL+"/Admin", {
+      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+"/Admin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -79,7 +80,7 @@ const role=useSessionStorage('role')
     }
 
     try {
-      const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/Admin/${editedUserData.Mail}`, {
+      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+`/Admin/${editedUserData.Mail}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -106,7 +107,7 @@ const role=useSessionStorage('role')
       return;
     }
     try {
-      const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/Admin/${Mail}`, {
+      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+`/Admin/${Mail}`, {
         method: "DELETE",
       });
       const res = await response.json();

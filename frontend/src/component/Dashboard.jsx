@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import Claimedproduct from "./Claimedproduct";
 import useSessionStorage from "./useSessionStorage";
+import fetchwithauth from "./token";
 
 const Dashboard = () => {
   const [cmpname, setcmpname] = useState();
@@ -30,7 +31,7 @@ const Dashboard = () => {
     const fetchDetails = async () => {
       setLoading(true);
       try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL+"/dashboard");
+        const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+"/dashboard");
         const res = await response.json();
 
         if (response.ok) {
@@ -52,12 +53,14 @@ const Dashboard = () => {
     fetchDetails();
   }, [summarizeCampaigns]);
 
-  const fetchCampaignData = async (campaignName, page) => {
+  const fetchCampaignData = async (cmpname, page) => {
+    console.log(cmpname)
     setLoading(true);
     try {
-      const response = await fetch(
-        import.meta.env.VITE_BACKEND_URL+`/campaigndetails/${campaignName}?page=${page}&limit=${limit}`
+      const response = await fetchwithauth(
+        import.meta.env.VITE_BACKEND_URL+`/campaigndetails/${cmpname}?page=${page}&limit=${limit}`
       );
+      console.log(response)
       const res = await response.json();
 
       if (response.ok) {

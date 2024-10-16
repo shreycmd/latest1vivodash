@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Productdetails from './Productdetails';
+import fetchwithauth from '../token';
 
 const Product = () => {
   const [newProduct, setNewProduct] = useState({
@@ -20,7 +21,7 @@ const Product = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/product?limit=20&page=${currentPage}`);
+        const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+`/product?limit=20&page=${currentPage}`);
         const data = await response.json();
         setProducts(data.data);
         setTotalPages(data.totalPages);
@@ -41,7 +42,7 @@ const Product = () => {
     e.preventDefault();
     setVisible(false);
     try {
-      const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/product', {
+      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+'/product', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +82,7 @@ const Product = () => {
     formData.append('uniqueIdentifier', imeiOrSerial); // Append the IMEI or Serial Number
 
     try {
-      const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/upload-products', {
+      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+'/upload-products', {
         method: 'POST',
         body: formData,
       });

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import fetchwithauth from './token';
 
 const Claimedproduct = ({ claimedProducts, cmpname }) => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -17,7 +18,7 @@ const Claimedproduct = ({ claimedProducts, cmpname }) => {
       setCitems(claimedProducts);
     } else {
       try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/search-wimei/${cmpname}/${searchTerm}`);
+        const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+`/search-wimei/${cmpname}/${searchTerm}`);
         const result = await response.json();
 
         if (response.ok) {
@@ -35,7 +36,7 @@ const Claimedproduct = ({ claimedProducts, cmpname }) => {
 
   const handleDownload = async () => {
     try {
-      const response = await fetch(import.meta.env.VITE_BACKEND_URL+`/export-wcitems?condition=win_${cmpname}`, {
+      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+`/export-wcitems?condition=win_${cmpname}`, {
         method: 'GET',
       });
 

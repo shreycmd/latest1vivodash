@@ -6,12 +6,13 @@ const csv = require('csv-parser')
 const fs = require('fs');
 const path = require("path")
 const fastCsv = require('fast-csv');
-
+const jwt=require("jsonwebtoken")
 const upload = multer({ dest: 'uploads/' });
 const cors = require('cors');
 const { p_object } = require("./types");
 const { product, campaign, Citem, Admin } = require("./db");
-
+require('dotenv').config();
+const jwtSecret=process.env.JWT_SECRET;
 app.use(express.json())
 app.use(cors({
   origin: '*', // Allow all origins (for testing only, not recommended for production)
@@ -82,7 +83,21 @@ app.use(cors({
       });
     }
   };
-  app.get("/admins",checkRole,async(req,res)=>{
+  function verifyToken(req,res,next){
+    const token=req.headers['authorization']?.split(" ")[1];
+    if(!token){
+      return res.status(403).json({message:"token is required"})
+    }
+    jwt.verify(token,jwtSecret,(err,decoded)=>{
+      if(err){
+        return res.status(401).json({message:"unauthorized acces"})
+      }
+      req.user=decoded;
+
+      next();
+    })
+  }
+  app.get("/Admin",verifyToken,async(req,res)=>{
     try {
       const result = await Admin.find({});
       res.status(200).json({
@@ -101,13 +116,21 @@ app.get("/",(req,res)=>{
   res.send("server up");
 });
 
-  app.get("/Admin", async (req, res) => {
+  app.post("/login", async (req, res) => {   
+    console.log(req.body)  //login
     try {
-        const result = await Admin.find({});
-        res.status(200).json({
-            message: "All records fetched",
-            data: result
+     
+      const {Mail,password}=req.body;
+        const result = await Admin.findOne({Mail});
+        if(!result||result.password!=password){
+         return res.status(401).json({
+            message: "invalid credentials",
+           
         });
+      }else{
+      const token=jwt.sign({id:result.Mail},jwtSecret,{expiresIn:"1h"})
+      return res.json({token,Mail,role:result.role})
+      }
     } catch (error) {
         return res.status(500).json({
             message: "Not fetched",
@@ -116,7 +139,7 @@ app.get("/",(req,res)=>{
     }
 });
 
-app.post("/Admin",async (req, res) => {
+app.post("/Admin",verifyToken,async (req, res) => {
     try {
         const { Mail, password, role } = req.body;
 
@@ -139,7 +162,7 @@ app.post("/Admin",async (req, res) => {
     }
 });
 
-app.put("/Admin/:Mail", async (req, res) => {
+app.put("/Admin/:Mail",verifyToken, async (req, res) => {
   try {
       const { Mail } = req.params;
       const { Mail: newMail, role, password } = req.body; // Destructure all required fields from req.body
@@ -170,7 +193,7 @@ app.put("/Admin/:Mail", async (req, res) => {
 });
 
 
-app.delete("/Admin/:Mail",async (req, res) => {
+app.delete("/Admin/:Mail",verifyToken,async (req, res) => {
     try {
         const { Mail } = req.params;
 
@@ -195,7 +218,7 @@ app.delete("/Admin/:Mail",async (req, res) => {
 });
  
 
-app.put("/citems/:Imei", upload.single('image'), async (req, res) => {
+app.put("/citems/:Imei", verifyToken,upload.single('image'), async (req, res) => {
   const pimei = req.params.Imei;
 
   try {
@@ -289,7 +312,7 @@ required:false
   }
 });
 
-app.put("/ncitems/:cname/:Imei", upload.single('image'), async (req, res) => {
+app.put("/ncitems/:cname/:Imei",upload.single('image'), async (req, res) => {
   const {cname,Imei} = req.params;
 
   try {
@@ -346,7 +369,7 @@ app.put("/ncitems/:cname/:Imei", upload.single('image'), async (req, res) => {
   }
 });
 // Delete Campaign Item
-app.delete("/citems/:Imei", async (req, res) => {
+app.delete("/citems/:Imei",async (req, res) => {
   const pimei = req.params.Imei;
   try {
     const del = await Citem.findOneAndDelete({ WinnerImei: pimei });
@@ -365,7 +388,7 @@ app.delete("/citems/:Imei", async (req, res) => {
     });
   }
 });
-app.delete("/ncitems/:Cname/:Imei", async (req, res) => {
+app.delete("/ncitems/:Cname/:Imei",async (req, res) => {
   const { Imei, Cname } = req.params;  // Correctly destructuring Imei and Cname
   const cmodel = getCampaignModel(Cname);
   
@@ -386,7 +409,7 @@ app.delete("/ncitems/:Cname/:Imei", async (req, res) => {
     });
   }
 });
-app.get("/citems",async (req,res)=>{
+app.get("/citems",verifyToken,async (req,res)=>{
     try {
         const show =await Citem.find({
          
@@ -450,7 +473,7 @@ required:false
 const getCampaignModel = (collectionName) => {
   return mongoose.model('Campaign', campaignSchema, collectionName);
 };
-app.post('/citems',async (req, res) => {
+app.post('/citems',verifyToken,async (req, res) => {
     const {Campaign_Name, Selectedproduct, WinnerImei, Wheelprize,Scratchprize } = req.body; 
   
 try{
@@ -479,7 +502,7 @@ try{
       });
     }
   });
-  app.get('/citem/:pid',async (req,res)=>{
+  app.get('/citem/:pid',verifyToken,async (req,res)=>{
     const pid=req.params.pid;
     try {
       const items=await Citem.find({WinnerImei:pid});
@@ -508,7 +531,7 @@ try{
       res.status(500).json({ message: 'Server error' });
     }
   })
-  app.get('/citems/:Campaign_Name', async (req, res) => {
+  app.get('/citems/:Campaign_Name', verifyToken,async (req, res) => {
     const campaignName = req.params.Campaign_Name;
   
     try {
@@ -527,7 +550,7 @@ try{
       res.status(500).json({ message: 'Server error' });
     }
   });
-  app.get("/citemnew/:Campaign_Name", async (req, res) => {
+  app.get("/citemnew/:Campaign_Name", verifyToken,async (req, res) => {
     const campaignName = req.params.Campaign_Name;
     const lastId = req.query.lastId || null; // null means it's the first page
     const direction = req.query.direction || "next";
@@ -560,7 +583,7 @@ try{
   
 //campaign creation part
 
-app.post('/campaign', convertProductIdsToNames, async (req, res) => {
+app.post('/campaign',convertProductIdsToNames, async (req, res) => {
   const {
     Name,
     Desc,
@@ -600,7 +623,7 @@ app.post('/campaign', convertProductIdsToNames, async (req, res) => {
   }
 });
 
-app.get('/campaign', async (req, res) => {
+app.get('/campaign',async (req, res) => {
     try {
       const allCampaigns = await campaign.find({}).populate('Products', 'Name'); // Populating product names
       return res.status(200).json({
@@ -615,7 +638,7 @@ app.get('/campaign', async (req, res) => {
     }
   });
 
-app.put("/campaign/:Name",async (req,res)=>{
+app.put("/campaign/:Name",verifyToken,async (req,res)=>{
     const search_param=req.params.Name;
     const {Name,Desc,FortuneWheel,ScratchCard,Start_date,End_date,Products}=req.body;
     try {
@@ -637,7 +660,7 @@ app.put("/campaign/:Name",async (req,res)=>{
     }
 
 })
-app.delete("/campaign/:Name", async (req, res) => {
+app.delete("/campaign/:Name", verifyToken,async (req, res) => {
   const search_query = req.params.Name;
   const cmodel = getCampaignModel(search_query); // dynamically created model for the campaign
  const wmodel=getWinModel(`win_${search_query}`)
@@ -673,7 +696,7 @@ app.delete("/campaign/:Name", async (req, res) => {
 
 //product all get,post,del,write
 
-app.get('/product',async (req,res)=>{
+app.get('/product',verifyToken,async (req,res)=>{
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit)||150 ;
   const skip = (page - 1) * limit;
@@ -692,7 +715,7 @@ app.get('/product',async (req,res)=>{
       res.status(500).json({ error: error.message });
   }
 })
-app.post("/product", async (req, res) => {
+app.post("/product", verifyToken,async (req, res) => {
   const req_body = req.body;
 
   // Validate request body using Zod
@@ -734,7 +757,7 @@ app.post("/product", async (req, res) => {
     });
   }
 });
-app.put("/product/:Name",async (req,res)=>{
+app.put("/product/:Name",verifyToken,async (req,res)=>{
     const req_body=req.body;
     const Name=req.params.Name;
     const safeParse=p_object.safeParse(req_body);
@@ -775,7 +798,7 @@ app.put("/product/:Name",async (req,res)=>{
       }
 
 })
-app.delete("/product/:Name",async(req,res)=>{
+app.delete("/product/:Name",verifyToken,async(req,res)=>{
     const {Name}=req.params;
     try {
        const f= await product.deleteOne({Name:Name})
@@ -794,7 +817,7 @@ app.delete("/product/:Name",async(req,res)=>{
     })
     }
 })
-app.post('/upload-citem', upload.single('file'), async (req, res, next) => {
+app.post('/upload-citem', verifyToken,upload.single('file'), async (req, res, next) => {
   try {
     const cname = JSON.parse(req.body.Campaign_Name);
     const { wheel = [], scratch = [] } = JSON.parse(req.body.prizes || '{}');
@@ -932,7 +955,7 @@ const unlinkFile = async (filePath) => {
   }
 };
 
-app.get('/export-citems', async (req, res) => {
+app.get('/export-citems', verifyToken,async (req, res) => {
   console.log(req.query);
   try {
       // Get the condition from query parameters
@@ -981,7 +1004,7 @@ app.get('/export-citems', async (req, res) => {
       res.status(500).json({ message: 'Internal Server Error' });
   }
 });
-app.get('/api/data', async (req, res) => {
+app.get('/api/data', verifyToken,async (req, res) => {
   try {
     const products = await Product.find(); // Adjust as necessary
     const campaigns = await Campaign.find(); // Adjust as necessary
@@ -991,7 +1014,7 @@ app.get('/api/data', async (req, res) => {
     res.status(500).json({ message: 'Error fetching data' });
   }
 });
-app.post('/upload-products', upload.single('file'), (req, res) => {
+app.post('/upload-products', verifyToken,upload.single('file'), (req, res) => {
   const results = [];
   const errors = [];
   
@@ -1038,7 +1061,7 @@ app.post('/upload-products', upload.single('file'), (req, res) => {
 });
 
 
-app.get("/dashboard", async (req, res) => {
+app.get("/dashboard", verifyToken,async (req, res) => {
   try {
     // Count all records in the campaign collection
     const totalCampaigns = await campaign.countDocuments(); // Count total campaigns
@@ -1085,103 +1108,6 @@ app.get("/dashboard", async (req, res) => {
     });
   }
 });
-app.get('/export-wcitems', async (req, res) => {
-  console.log(req.query);
-  try {
-      // Get the condition from query parameters
-      const condition = req.query.condition || ''; // Use query params to pass the condition
-      const col = getCampaignModel(condition);
-      
-      // Create a cursor to find documents in batches
-      const cursor = col.find({}).cursor(); // Use cursor to stream documents
-
-      // Set the response headers for CSV
-      res.setHeader('Content-disposition', 'attachment; filename=citems.csv');
-      res.setHeader('Content-Type', 'text/csv');
-
-      // Create a CSV stream
-      const csvStream = fastCsv.format({ headers: true });
-
-      // Pipe the CSV stream to the response
-      csvStream.pipe(res);
-
-      // Process each item in the cursor
-      cursor.on('data', (item) => {
-          csvStream.write({
-             WinnerName:item.WinnerName,
-              WinnerImei: item.WinnerImei,
-              location:item.location,
-              Claimedon: item.Claimedon ? new Date(item.Claimedon).toLocaleDateString() : '',
-              
-          });
-      });
-
-      // Handle the end of the cursor
-      cursor.on('end', () => {
-          csvStream.end(); // End the CSV stream
-      });
-
-      // Handle any errors in the cursor
-      cursor.on('error', (error) => {
-          console.error('Cursor error:', error);
-          res.status(500).json({ message: 'Internal Server Error' });
-      });
-
-  } catch (error) {
-      console.error('Error exporting data:', error);
-      res.status(500).json({ message: 'Internal Server Error' });
-  }
-});
-
-app.get('/search-imei/:cname/:imei', async (req, res) => {
-  const { imei ,cname} = req.params;
-  const name=getCampaignModel(cname)
-
-  try {
-    const results = await name.find({
-      // Modify this to match the fields you want to search
-      WinnerImei: { $regex: imei, $options: 'i' }
-    });
-
-    res.json({ data: results });
-  } catch (error) {
-    console.error('Error fetching search results:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-app.get('/search-wimei/:cname/:imei', async (req, res) => {
-  const { imei ,cname} = req.params;
-  const name=getWinModel(`win_${cname}`)
-  
-  try {
-    const results = await name.find({
-      // Modify this to match the fields you want to search
-      WinnerImei: { $regex: imei, $options: 'i' }
-    });
-
-    res.json({ data: results });
-  } catch (error) {
-    console.error('Error fetching search results:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-app.get("/uniqueProducts/:cname", async (req, res) => {
-  const { cname } = req.params;
-  const model = getCampaignModel(cname);
-
-  try {
-    // Use the distinct method to get unique selected products
-    const uniqueProducts = await model.distinct("Selectedproduct");
-
-    res.status(200).json({
-      message: "Unique products fetched successfully",
-      uniqueProducts
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error fetching unique products", error });
-  }
-});
 const WinModelSchema = new mongoose.Schema({
   WinnerImei: { 
     type: String, 
@@ -1216,6 +1142,107 @@ required:false
 const getWinModel = (collectionName) => {
   return mongoose.model(`${collectionName}`, WinModelSchema, collectionName);
 };
+app.get('/export-wcitems', verifyToken,async (req, res) => {
+
+  try {
+      // Get the condition from query parameters
+      const condition = req.query.condition || ''; // Use query params to pass the condition
+      const col = getWinModel(condition);
+      
+      // Create a cursor to find documents in batches
+      const cursor = col.find({}).cursor(); // Use cursor to stream documents
+
+      // Set the response headers for CSV
+      res.setHeader('Content-disposition', 'attachment; filename=citems.csv');
+      res.setHeader('Content-Type', 'text/csv');
+
+      // Create a CSV stream
+      const csvStream = fastCsv.format({ headers: true });
+
+      // Pipe the CSV stream to the response
+      csvStream.pipe(res);
+    
+      // Process each item in the cursor
+      cursor.on('data', (item) => {
+     
+          csvStream.write({
+             WinnerName:item.WinnerName,
+              WinnerImei: item.WinnerImei,
+              Claimedon: item.Claimedon ? new Date(item.Claimedon).toLocaleDateString() : '',
+              location:item.location,
+              prize:item.Prize,
+              
+              
+          });
+      });
+
+      // Handle the end of the cursor
+      cursor.on('end', () => {
+          csvStream.end(); // End the CSV stream
+      });
+
+      // Handle any errors in the cursor
+      cursor.on('error', (error) => {
+          console.error('Cursor error:', error);
+          res.status(500).json({ message: 'Internal Server Error' });
+      });
+
+  } catch (error) {
+      console.error('Error exporting data:', error);
+      res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+app.get('/search-imei/:cname/:imei', verifyToken,async (req, res) => {
+  const { imei ,cname} = req.params;
+  const name=getCampaignModel(cname)
+
+  try {
+    const results = await name.find({
+      // Modify this to match the fields you want to search
+      WinnerImei: { $regex: imei, $options: 'i' }
+    });
+
+    res.json({ data: results });
+  } catch (error) {
+    console.error('Error fetching search results:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+app.get('/search-wimei/:cname/:imei', verifyToken,async (req, res) => {
+  const { imei ,cname} = req.params;
+  const name=getWinModel(`win_${cname}`)
+  
+  try {
+    const results = await name.find({
+      // Modify this to match the fields you want to search
+      WinnerImei: { $regex: imei, $options: 'i' }
+    });
+
+    res.json({ data: results });
+  } catch (error) {
+    console.error('Error fetching search results:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+app.get("/uniqueProducts/:cname",async (req, res) => {
+  const { cname } = req.params;
+  const model = getCampaignModel(cname);
+
+  try {
+    // Use the distinct method to get unique selected products
+    const uniqueProducts = await model.distinct("Selectedproduct");
+
+    res.status(200).json({
+      message: "Unique products fetched successfully",
+      uniqueProducts
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching unique products", error });
+  }
+});
+
 
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -1234,7 +1261,7 @@ const uploading = multer({ storage });
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // POST route to handle the winner record creation with image upload
-app.post("/nc/:cname", uploading.single('invoice'), async (req, res) => {
+app.post("/nc/:cname",uploading.single('invoice'), async (req, res) => {
   const { cname } = req.params;
   const collectionName = `win_${cname}`;
   const WinModel = getWinModel(collectionName);
@@ -1268,8 +1295,8 @@ app.post("/nc/:cname", uploading.single('invoice'), async (req, res) => {
     });
   }
 });
-app.get("/campaigndetails/:cname", async (req, res) => {
-  const cname = req.params.cname;
+app.get("/campaigndetails/:cmpname", verifyToken,async (req, res) => {
+  const cname = req.params.cmpname;
   const wname = `win_${cname}`;
   const collect = getWinModel(wname);
   const page = parseInt(req.query.page) || 1;
@@ -1294,7 +1321,20 @@ app.get("/campaigndetails/:cname", async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+app.use((err, req, res, next) => {
+  console.error(err.stack); // Log the error stack for debugging
 
+  
+  res.status(err.status || 500);
+
+  // Send the error response
+  res.json({
+    success: false,
+    message: err.message || 'Internal Server Error',
+   
+   
+  });
+});
 
 // Start the server
 app.listen(3000,'0.0.0.0', () => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import Select from 'react-select';
+import fetchwithauth from './token';
 
 const Campaign = () => {
   const [formData, setFormData] = useState({
@@ -23,7 +24,7 @@ const Campaign = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/product');
+        const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+'/product');
         const result = await response.json();
         if (response.ok) {
           const options = result.data.map(product => ({
@@ -44,7 +45,7 @@ const Campaign = () => {
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
-        const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/campaign');
+        const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+'/campaign');
         const res = await response.json();
         if (response.ok) {
           setTable(res.data);
@@ -105,7 +106,7 @@ const Campaign = () => {
     const products = formData.selectedProducts.map(option => option.value);
 
     try {
-      const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/campaign', {
+      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+'/campaign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
