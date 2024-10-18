@@ -473,35 +473,45 @@ required:false
 const getCampaignModel = (collectionName) => {
   return mongoose.model('Campaign', campaignSchema, collectionName);
 };
-app.post('/citems',verifyToken,async (req, res) => {
-    const {Campaign_Name, Selectedproduct, WinnerImei, Wheelprize,Scratchprize } = req.body; 
-  
-try{
-      // Create the citem with the Campaign reference
-      const collectionName = `${Campaign_Name}`;
-      const CampaignModel = getCampaignModel(collectionName);
-      const newCampaign = await CampaignModel.create({
-        Campaign_Name,
-        Selectedproduct,
-        WinnerImei,
-        Wheelprize,
-        Scratchprize,
-      
-      });
-  
-      
-      
-  return res.status(200).json({
-    message:"added on both"
-  })
-  
-    } catch (error) {
-      return res.status(500).json({
-        message: 'Failed to add item',
-        error: error.message
+app.post('/citems' , async (req, res) => {
+  const { Campaign_Name, Selectedproduct, WinnerImei, Wheelprize, Scratchprize } = req.body;
+
+  try {
+    const collectionName = `${Campaign_Name}`;
+    const CampaignModel = getCampaignModel(collectionName);
+
+    // Check if WinnerImei already exists
+    const existingCampaign = await CampaignModel.findOne({ WinnerImei });
+    if (existingCampaign) {
+      return res.status(400).json({
+        message: 'Duplicate IMEI - WinnerImei already exists. No new item added.'
       });
     }
-  });
+
+    // Create new campaign item
+    const newCampaign = await CampaignModel.create({
+      Campaign_Name,
+      Selectedproduct,
+      WinnerImei,
+      Wheelprize,
+      Scratchprize,
+      Addedon: Date.now()  // Set Addedon when creating the new document
+    });
+
+    return res.status(201).json({
+      message: "New campaign item created successfully",
+      data: newCampaign
+    });
+    
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Failed to add item',
+      error: error.message
+    });
+  }
+});
+
+
   app.get('/citem/:pid',verifyToken,async (req,res)=>{
     const pid=req.params.pid;
     try {
@@ -583,7 +593,7 @@ try{
   
 //campaign creation part
 
-app.post('/campaign',convertProductIdsToNames, async (req, res) => {
+app.post('/campaign', convertProductIdsToNames, async (req, res) => {
   const {
     Name,
     Desc,
@@ -593,14 +603,17 @@ app.post('/campaign',convertProductIdsToNames, async (req, res) => {
     Start_date,
     End_date,
     Products,
-    WheelPrizes, // Add this line
-    Scratchprize // Add this line
+    WheelPrizes,
+    Scratchprize
   } = req.body;
 
   try {
-    // Create the campaign with the product names and prizes
+    // Remove all spaces from Name
+    const trimmedName = Name.replace(/\s+/g, '');
+
+    // Create the campaign with the updated Name and other details
     await campaign.create({
-      Name,
+      Name: trimmedName, // Use the trimmed name here
       Desc,
       ScratchCard,
       FortuneWheel,
@@ -608,8 +621,8 @@ app.post('/campaign',convertProductIdsToNames, async (req, res) => {
       Start_date,
       End_date,
       Products,
-      WheelPrizes: WheelPrizes || [], // Include WheelPrizes, default to empty array if not provided
-      Scratchprize: Scratchprize || [] // Include Scratchprize, default to empty array if not provided
+      WheelPrizes: WheelPrizes || [], // Default to empty array if not provided
+      Scratchprize: Scratchprize || [] // Default to empty array if not provided
     });
 
     return res.status(200).json({
@@ -622,6 +635,7 @@ app.post('/campaign',convertProductIdsToNames, async (req, res) => {
     });
   }
 });
+
 
 app.get('/campaign',async (req, res) => {
     try {
@@ -696,7 +710,7 @@ app.delete("/campaign/:Name", verifyToken,async (req, res) => {
 
 //product all get,post,del,write
 
-app.get('/product',verifyToken,async (req,res)=>{
+app.get('/product',async (req,res)=>{
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit)||150 ;
   const skip = (page - 1) * limit;
@@ -715,7 +729,7 @@ app.get('/product',verifyToken,async (req,res)=>{
       res.status(500).json({ error: error.message });
   }
 })
-app.post("/product", verifyToken,async (req, res) => {
+app.post("/product",async (req, res) => {
   const req_body = req.body;
 
   // Validate request body using Zod
@@ -757,7 +771,7 @@ app.post("/product", verifyToken,async (req, res) => {
     });
   }
 });
-app.put("/product/:Name",verifyToken,async (req,res)=>{
+app.put("/product/:Name",async (req,res)=>{
     const req_body=req.body;
     const Name=req.params.Name;
     const safeParse=p_object.safeParse(req_body);
@@ -798,7 +812,7 @@ app.put("/product/:Name",verifyToken,async (req,res)=>{
       }
 
 })
-app.delete("/product/:Name",verifyToken,async(req,res)=>{
+app.delete("/product/:Name",async(req,res)=>{
     const {Name}=req.params;
     try {
        const f= await product.deleteOne({Name:Name})
@@ -817,9 +831,13 @@ app.delete("/product/:Name",verifyToken,async(req,res)=>{
     })
     }
 })
-app.post('/upload-citem', verifyToken,upload.single('file'), async (req, res, next) => {
+app.post('/upload-citem', verifyToken, upload.single('file'), async (req, res, next) => {
   try {
     const cname = JSON.parse(req.body.Campaign_Name);
+    const cdetail = await campaign.find({Name:cname});
+    const product = cdetail[0].Products; // Array of valid products from the campaign
+   // console.log(product,cdetail);
+    
     const { wheel = [], scratch = [] } = JSON.parse(req.body.prizes || '{}');
     const results = [];
     const errors = [];
@@ -848,12 +866,15 @@ app.post('/upload-citem', verifyToken,upload.single('file'), async (req, res, ne
     stream.on('data', (data) => {
       if (validateCitemData(data)) {
         const imei = data.WinnerImei;
+        const productFromCSV = data.Selectedproduct; // Extract the Product field from the CSV file
 
-        // Check if the IMEI is already in the set (i.e., a duplicate within the CSV)
-        if (!csvIMEIs.has(imei)) {
+        // Check if the Product matches a product from the campaign and if the IMEI is not a duplicate
+        if (product.includes(productFromCSV) && !csvIMEIs.has(imei)) {
           csvIMEIs.add(imei);
           allRecords.push(data); // Store the valid record
           imeis.push(imei);
+        } else if (!product.includes(productFromCSV)) {
+          errors.push({ message: `Product from CSV is not part of the selected product list: ${productFromCSV}`, data });
         } else {
           errors.push({ message: `Duplicate IMEI in CSV: ${imei}`, data });
         }
@@ -891,14 +912,8 @@ app.post('/upload-citem', verifyToken,upload.single('file'), async (req, res, ne
     next(error);
   }
 });
+
 // Utility function to shuffle an array
-function shuffleArray(array) {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]]; // Swap elements
-  }
-  return array;
-}
 async function processBatch(cmodel, batch, cname, prizeCounts) {
   // Fetch existing records from DB based on batch IMEIs
   const existingRecords = await cmodel.find({ WinnerImei: { $in: batch.map(b => b.WinnerImei) } }, 'WinnerImei');
@@ -907,30 +922,34 @@ async function processBatch(cmodel, batch, cname, prizeCounts) {
   let uniqueResults = [];
   let skippedCount = 0;
 
+  // Initialize available prizes with the quantities remaining
+  let availableWheelPrizes = expandPrizes(prizeCounts.wheel);
+  let availableScratchPrizes = expandPrizes(prizeCounts.scratch);
+
+  // Shuffle the expanded prize arrays to ensure randomness
+  availableWheelPrizes = shuffleArray(availableWheelPrizes);
+  availableScratchPrizes = shuffleArray(availableScratchPrizes);
+
   for (const record of batch) {
     const imei = record.WinnerImei;
 
     if (!existingIMEIs.has(imei)) {
       record.Campaign_Name = cname;
 
-      for (const prizeName in prizeCounts.wheel) {
-        if (prizeCounts.wheel[prizeName] > 0) {
-          record.Wheelprize = prizeName;
-          prizeCounts.wheel[prizeName]--;
-          break;
-        } else {
-          record.Wheelprize = "BadLuck";
-        }
+      // 1. Distribute wheel prize
+      if (availableWheelPrizes.length > 0) {
+        const randomWheelPrize = availableWheelPrizes.pop(); // Use from the shuffled array
+        record.Wheelprize = randomWheelPrize;
+      } else {
+        record.Wheelprize = "BadLuck";
       }
 
-      for (const prizeName in prizeCounts.scratch) {
-        if (prizeCounts.scratch[prizeName] > 0) {
-          record.Scratchprize = prizeName;
-          prizeCounts.scratch[prizeName]--;
-          break;
-        } else {
-          record.Scratchprize = "BadLuck";
-        }
+      // 2. Distribute scratch prize
+      if (availableScratchPrizes.length > 0) {
+        const randomScratchPrize = availableScratchPrizes.pop(); // Use from the shuffled array
+        record.Scratchprize = randomScratchPrize;
+      } else {
+        record.Scratchprize = "BadLuck";
       }
 
       uniqueResults.push(record);
@@ -946,13 +965,34 @@ async function processBatch(cmodel, batch, cname, prizeCounts) {
   return { insertedCount: uniqueResults.length, skippedCount };
 }
 
+// Function to expand the prize list based on quantity
+function expandPrizes(prizeCounts) {
+  const expandedPrizes = [];
+  for (const prizeName in prizeCounts) {
+    for (let i = 0; i < prizeCounts[prizeName]; i++) {
+      expandedPrizes.push(prizeName);
+    }
+  }
+  return expandedPrizes;
+}
+
+// Fisher-Yates Shuffle to efficiently shuffle the array
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+  }
+  return array;
+}
+
+
 const unlinkFile = async (filePath) => {
   try {
     await fs.promises.unlink(filePath);
  
   } catch (err) {
-    console.error(`Error deleting ${filePath}:`, err);
-  }
+    console.error(`Error deleting ${filePath}:, err`);
+  }  
 };
 
 app.get('/export-citems', verifyToken,async (req, res) => {
@@ -1014,10 +1054,10 @@ app.get('/api/data', verifyToken,async (req, res) => {
     res.status(500).json({ message: 'Error fetching data' });
   }
 });
-app.post('/upload-products', verifyToken,upload.single('file'), (req, res) => {
+app.post('/upload-products', upload.single('file'), (req, res) => {
   const results = [];
   const errors = [];
-  
+
   if (!req.file) {
     return res.status(400).send('No file uploaded');
   }
@@ -1026,37 +1066,39 @@ app.post('/upload-products', verifyToken,upload.single('file'), (req, res) => {
 
   fs.createReadStream(req.file.path)
     .pipe(csv())
-    .on('data', (data) => {
+    .on('data', async (data) => {
       // Add u_id to each record
       data.U_id = uid;
-      
+
       // Validate data and push to results or errors
       if (validateProductData(data)) {
-        results.push(data);
+        try {
+          // Use upsert to update existing records or insert new ones
+          await product.updateOne(
+            { Name: data.Name },  // Matching criteria (unique field)
+            { $set: data },       // Update data if found
+            { upsert: true }      // Insert new if not found
+          );
+          results.push(data);
+        } catch (error) {
+          console.error(`Error processing product ${data.Name}:`, error);
+          errors.push(data); // Add to errors if any issue during upsert
+        }
       } else {
-        errors.push(data); 
+        errors.push(data); // Add to errors if validation fails
       }
     })
     .on('end', () => {
-      if (results.length === 0) {
-        return res.status(400).send('No valid product data found');
-      }
+      const responseMessage = {
+        message: 'Products processed successfully (with upserts)',
+        validRows: results.length,
+        invalidRows: errors.length,
+      };
 
-      product.insertMany(results)
-        .then(() => {
-          const responseMessage = {
-            message: 'Products uploaded successfully',
-            invalidRows: errors.length,
-            validRows: results.length
-          };
-          res.status(200).json(responseMessage);
-        })
-        .catch((error) => {
-          res.status(500).send('Error uploading products: ' + error.message);
-        })
-        .finally(() => {
-          fs.unlinkSync(req.file.path);
-        });
+      res.status(200).json(responseMessage);
+
+      // Clean up the uploaded file after processing
+      fs.unlinkSync(req.file.path);
     });
 });
 
@@ -1261,38 +1303,52 @@ const uploading = multer({ storage });
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // POST route to handle the winner record creation with image upload
-app.post("/nc/:cname",uploading.single('invoice'), async (req, res) => {
+app.post("/nc/:cname", uploading.single('invoice'), async (req, res) => {
   const { cname } = req.params;
+  const cmodel = getCampaignModel(cname);
   const collectionName = `win_${cname}`;
   const WinModel = getWinModel(collectionName);
-  
-  const { WinnerImei, Claimedon, WinnerName, Prize,location } = req.body;
+
+  const { WinnerImei, Claimedon, WinnerName, Prize, location } = req.body;
 
   // Get the path of the uploaded file
+  
   const invoicePath = req.file ? req.file.path : null;
 
-
-
   try {
-    const createdRecord = await WinModel.create({
-      WinnerImei,
-      Claimedon,
-      WinnerName,
-      location,
-      Prize,
-      invoice: invoicePath // Store the image path in the database
-    });
+      
+      const createdRecord = await WinModel.create({
+          WinnerImei,
+          Claimedon,
+          WinnerName,
+          location,
+          Prize,
+          invoice: invoicePath // Store the image path in the database
+      });
+      
+      const crecords = await cmodel.findOneAndUpdate(
+          { WinnerImei },
+          { Status: true, Claimedon, WinnerName },
+          { new: true }
+      );
 
-    return res.status(201).json({
-      message: "Winner record created successfully",
-      data: createdRecord
-    });
+
+      if (!crecords) {
+          return res.status(400).json({
+              message: "Not found"
+          });
+      }
+
+      return res.status(201).json({
+          message: "Winner record created successfully",
+          data: createdRecord
+      });
   } catch (error) {
-    console.error("Error creating record:", error);
-    return res.status(500).json({
-      message: "Error creating winner record",
-      error: error.message
-    });
+      console.error("Error creating record:", error.message);
+      return res.status(500).json({
+          message: "Error creating winner record",
+          error: error.message
+      });
   }
 });
 app.get("/campaigndetails/:cmpname", verifyToken,async (req, res) => {

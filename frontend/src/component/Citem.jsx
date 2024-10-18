@@ -161,8 +161,8 @@ const CitemsTable = ({
         <tr>
           <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Product</th>
           <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Winner IMEI</th>
-         {role=='main'? <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Wheel Prize</th>:null}
-         {role=='main'? <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Scratch Prize</th>:null}
+         {role=='admin'? <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Wheel Prize</th>:null}
+         {role=='admin'? <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Scratch Prize</th>:null}
           <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Claimed on</th>
           <th className="border border-gray-300 px-4 py-2 text-left font-semibold">WinnerName</th>
           <th className="border border-gray-300 px-4 py-2 text-left font-semibold">Added on</th>
@@ -179,15 +179,15 @@ const CitemsTable = ({
             >
               <td className="border border-gray-300 px-4 py-2">{item.Selectedproduct}</td>
               <td className="border border-gray-300 px-4 py-2">{item.WinnerImei}</td>
-             {role=='main'?<td className="border border-gray-300 px-4 py-2">{item.Wheelprize}</td> :null} 
-             {role=='main'?<td className="border border-gray-300 px-4 py-2">{item.Scratchprize}</td> :null} 
+             {role=='admin'?<td className="border border-gray-300 px-4 py-2">{item.Wheelprize}</td> :null} 
+             {role=='admin'?<td className="border border-gray-300 px-4 py-2">{item.Scratchprize}</td> :null} 
               <td className="border border-gray-300 px-4 py-2">{item.Claimedon? new Date(item.Claimedon).toLocaleDateString(): '-'}</td>
               <td className="border border-gray-300 px-4 py-2">{item.WinnerName? item.WinnerName:"-"}</td>
               <td className="border border-gray-300 px-4 py-2">
                 {item.Addedon ? new Date(item.Addedon).toLocaleDateString() : '-'}
               </td>
               <td className="border border-gray-300 px-4 py-2">
-                <div className="flex space-x-2">{role=='main'?<button
+                <div className="flex space-x-2">{role=='admin'?<button
                   className="border-2 border-black bg-green-500 text-white px-2 py-1 rounded-lg hover:scale-105 transition-transform duration-150"
                   onClick={() => onEdit(item)}
                   aria-label={`Edit item with IMEI ${item.WinnerImei}`}
@@ -393,7 +393,7 @@ const handleCreateClick = async (campaign, direction = "next") => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+'/citems', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/citems', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

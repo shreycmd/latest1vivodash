@@ -6,7 +6,7 @@ mongoose.connect("mongodb+srv://shrey03505:6dSQwRMvAXw492ve@cluster0.2v0lmym.mon
 
 // Define Product schema
 const schema_product = new mongoose.Schema({
-  Name: { type: String, required: true },
+  Name: { type: String, required: true,unique: true},
   Type: { type: String, required: true },
   U_id: { type: String, required: true },
   Addedon: { type: Date,default:Date.now ,required: false },

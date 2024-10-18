@@ -16,15 +16,16 @@ const fetchWithAuth = async (url, options = {}) => {
 
     // Make the request with the headers
     const response = await fetch(url, { ...options, headers });
-
+    console.log(response.statusText)
     // Check for HTTP errors
     if (!response.ok) {
         if (response.status === 401) {
             // If unauthorized (token expired or invalid), redirect to login
             localStorage.removeItem('token'); // Optional: clear invalid token
-            window.location.href = '/login';
+            window.location.href = '/';
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        
+        throw new Error(`HTTP error! status: ${response.text}`);
     }
 
     // Return the response object or parsed JSON as needed

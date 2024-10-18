@@ -42,7 +42,7 @@ const Product = () => {
     e.preventDefault();
     setVisible(false);
     try {
-      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+'/product', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/product', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ const Product = () => {
     formData.append('uniqueIdentifier', imeiOrSerial); // Append the IMEI or Serial Number
 
     try {
-      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+'/upload-products', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/upload-products', {
         method: 'POST',
         body: formData,
       });
