@@ -1314,8 +1314,8 @@ app.post("/nc/:cname", uploading.single('invoice'), async (req, res) => {
   const collectionName = `win_${cname}`;
   const WinModel = getWinModel(collectionName);
 
-  const { WinnerImei, Claimedon, WinnerName, Prize, location } = req.body;
-
+  let { WinnerImei, Claimedon, WinnerName, Prize, location } = req.body;
+  Claimedon = new Date(Claimedon).toLocaleDateString();
   // Get the path of the uploaded file
   
   const invoicePath = req.file ? req.file.path : null;
