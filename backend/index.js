@@ -1325,6 +1325,7 @@ app.post("/nc/:cname", uploading.single('invoice'), async (req, res) => {
       const createdRecord = await WinModel.create({
           WinnerImei,
           WinnerName,
+          Claimedon
           location,
           Prize,
           invoice: invoicePath // Store the image path in the database
@@ -1332,7 +1333,7 @@ app.post("/nc/:cname", uploading.single('invoice'), async (req, res) => {
       
       const crecords = await cmodel.findOneAndUpdate(
           { WinnerImei },
-          { Status: true, WinnerName },
+          { Status: true, Claimedon , WinnerName },
           { new: true }
       );
 

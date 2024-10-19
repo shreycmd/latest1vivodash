@@ -63,7 +63,7 @@ required:false
   },
   Claimedon: { 
     type: Date, 
-    default: true,
+    default: new Date().toLocaleDateString(),
   },
   
   WinnerName:{
