@@ -20,11 +20,13 @@ const Campaign = () => {
   const [scratchCardPrizes, setScratchCardPrizes] = useState([{ prize: '', quantity: 0 }]);
   const [productOptions, setProductOptions] = useState([]);
   const [table, setTable] = useState([]);
+  const [editing, setEditing] = useState(false); // For tracking edit mode
+  const [editCampaignName, setEditCampaignName] = useState(null); // To store original name for editing
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+'/product');
+        const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL + '/product');
         const result = await response.json();
         if (response.ok) {
           const options = result.data.map(product => ({
@@ -45,7 +47,7 @@ const Campaign = () => {
   useEffect(() => {
     const fetchCampaigns = async () => {
       try {
-        const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+'/campaign');
+        const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL + '/campaign');
         const res = await response.json();
         if (response.ok) {
           setTable(res.data);
@@ -106,8 +108,14 @@ const Campaign = () => {
     const products = formData.selectedProducts.map(option => option.value);
 
     try {
-      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+'/campaign', {
-        method: 'POST',
+      const url = editing 
+        ? `${import.meta.env.VITE_BACKEND_URL}/campaign/${editCampaignName}` 
+        : `${import.meta.env.VITE_BACKEND_URL}/campaign`;
+
+      const method = editing ? 'PUT' : 'POST';
+
+      const response = await fetchwithauth(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           Name: formData.campaignName,
@@ -138,12 +146,31 @@ const Campaign = () => {
         });
         setPrizes([{ prize: '', quantity: 0 }]);
         setScratchCardPrizes([{ prize: '', quantity: 0 }]);
+        setEditing(false); // Reset edit mode
+        setEditCampaignName(null);
       } else {
         throw new Error(result.message || 'Something went wrong');
       }
     } catch (error) {
       alert(`Error: ${error.message}`);
     }
+  };
+
+  const handleEdit = (campaign) => {
+    setFormData({
+      campaignName: campaign.Name,
+      description: campaign.Desc,
+      type: campaign.Prize_type,
+      startDate: new Date(campaign.Start_date),
+      endDate: new Date(campaign.End_date),
+      selectedProducts: productOptions.filter(option => campaign.Products.includes(option.value)),
+      fortuneWheel: campaign.FortuneWheel,
+      scratchCard: campaign.ScratchCard,
+    });
+    setPrizes(campaign.WheelPrizes || [{ prize: '', quantity: 0 }]);
+    setScratchCardPrizes(campaign.Scratchprize || [{ prize: '', quantity: 0 }]);
+    setEditing(true);
+    setEditCampaignName(campaign.Name); // Store the original name for the update
   };
 
   return (
@@ -311,16 +338,17 @@ const Campaign = () => {
 
           {/* Products Selection */}
           <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">Select Products:</label>
-            <Select
-              isMulti
-              options={productOptions}
-              value={formData.selectedProducts}
-              onChange={(selectedOptions) => handleSelectChange(selectedOptions, 'selectedProducts')}
-              className="basic-multi-select"
-              classNamePrefix="select"
-            />
-          </div>
+  <label className="block text-gray-700 font-medium mb-2">Select Products:</label>
+  <Select
+    isMulti
+    closeMenuOnSelect={false} // This keeps the dropdown open after each selection
+    options={productOptions}
+    value={formData.selectedProducts}
+    onChange={(selectedOptions) => handleSelectChange(selectedOptions, 'selectedProducts')}
+    className="basic-multi-select"
+    classNamePrefix="select"
+  />
+</div>
 
           {/* Start and End Date */}
           <div className="mb-4">
@@ -359,6 +387,7 @@ const Campaign = () => {
               <th className="border border-gray-300 px-4 py-2">Start Date</th>
               <th className="border border-gray-300 px-4 py-2">End Date</th>
               <th className="border border-gray-300 px-4 py-2">Prizes</th>
+              <th className="border border-gray-300 px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -386,6 +415,14 @@ const Campaign = () => {
                       </span>
                     ))
                   : 'No Scratch Card'}</div>
+                </td>
+                <td className="border border-gray-300 px-4 py-2">
+                  <button
+                    className="bg-yellow-500 text-white px-4 py-2 rounded-lg mr-2"
+                    onClick={() => handleEdit(campaign)} // Edit button
+                  >
+                    Edit
+                  </button>
                 </td>
               </tr>
             ))}

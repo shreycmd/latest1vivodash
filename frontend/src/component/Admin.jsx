@@ -8,22 +8,22 @@ const Admin = () => {
   const [newUser, setNewUser] = useState({
     Mail: "",
     password: "",
-    role: "user",
+    role: "admin",
   });
   const [editingUser, setEditingUser] = useState(null);
   const [editedUserData, setEditedUserData] = useState({
     Mail: "",
     password: "",
-    role: "user",
+    role: "admin",
   });
 
-  // Get the logged-in user's role from localStorage
-const role=useSessionStorage('role')
+  // Get the logged-in user's role from session storage
+  const [role] = useSessionStorage("role");
 
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const result = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+"/Admin");
+        const result = await fetchwithauth(import.meta.env.VITE_BACKEND_URL + "/Admin");
         const res = await result.json();
         setUsers(res.data);
       } catch (error) {
@@ -45,21 +45,24 @@ const role=useSessionStorage('role')
 
   const addUser = async () => {
     try {
-      if (role =='user') {
-        setErr("Only admins can add users.");
+      // Allow the main user to create both main and admin accounts
+      if (role === "admin" && newUser.role !== "admin") {
+        setErr("Admin users can only create admin accounts.");
         return;
       }
-      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+"/Admin", {
+
+      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL + "/Admin", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(newUser),
       });
+
       const res = await response.json();
       if (response.ok) {
         setUsers([...users, res.data]);
-        setNewUser({ Mail: "", password: "", role: "user" });
+        setNewUser({ Mail: "", password: "", role: "admin" });
       } else {
         setErr(res.message);
       }
@@ -69,18 +72,13 @@ const role=useSessionStorage('role')
   };
 
   const updateUserRole = async () => {
-    if (role == "user") {
-      setErr("Only admins can update roles.");
-      return;
-    }
-
     if (!editingUser) {
       setErr("No user is being edited.");
       return;
     }
 
     try {
-      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+`/Admin/${editedUserData.Mail}`, {
+      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL + `/Admin/${editedUserData.Mail}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -89,10 +87,9 @@ const role=useSessionStorage('role')
       });
       const res = await response.json();
       if (response.ok) {
-        // Update the user list correctly
         setUsers(users.map((user) => (user.Mail === editedUserData.Mail ? { ...user, ...editedUserData } : user)));
         setEditingUser(null);
-        setEditedUserData({ Mail: "", password: "", role: "user" });
+        setEditedUserData({ Mail: "", password: "", role: "admin" });
       } else {
         setErr(res.message);
       }
@@ -102,19 +99,20 @@ const role=useSessionStorage('role')
   };
 
   const deleteUser = async (Mail) => {
-    if (role == "user") {
-      setErr("Only admins can delete users.");
-      return;
-    }
     try {
-      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+`/Admin/${Mail}`, {
-        method: "DELETE",
-      });
-      const res = await response.json();
-      if (response.ok) {
-        setUsers(users.filter((user) => user.Mail !== Mail));
+      // Allow only main users to delete accounts
+      if (role === "main") {
+        const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL + `/Admin/${Mail}`, {
+          method: "DELETE",
+        });
+        const res = await response.json();
+        if (response.ok) {
+          setUsers(users.filter((user) => user.Mail !== Mail));
+        } else {
+          setErr(res.message);
+        }
       } else {
-        setErr(res.message);
+        setErr("Only main users can delete other users.");
       }
     } catch (error) {
       setErr(error.message);
@@ -126,140 +124,126 @@ const role=useSessionStorage('role')
     setEditedUserData(user); // Pre-fill the form with the user's current data
   };
 
+  // Filter users based on the role, ensuring admin can't see "main" users
+  const filteredUsers = users.filter((user) => (role === "admin" ? user.role !== "main" : true));
+
   return (
     <div className="p-4">
       {err && <div className="text-red-500">Error: {err}</div>}
-      {role != "user" && (
-        <div className="mb-4">
-          <h2 className="text-lg font-bold mb-2">Add New User</h2>
-          <input
-            type="email"
-            name="Mail"
-            placeholder="Email"
-            value={newUser.Mail}
-            onChange={handleInputChange}
-            className="border p-2 rounded mr-2"
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={newUser.password}
-            onChange={handleInputChange}
-            className="border p-2 rounded mr-2"
-          />
-          <select
-            name="role"
-            value={newUser.role}
-            onChange={handleInputChange}
-            className="border p-2 rounded mr-2"
-          >
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-          </select>
-          <button
-            onClick={addUser}
-            className="bg-green-500 text-white px-4 py-2 rounded"
-          >
-            Add User
-          </button>
-        </div>
-      )}
+       
+      <div className="mb-4">
+        <h2 className="text-lg font-bold mb-2">Add New User</h2>
+        <input
+          type="email"
+          name="Mail"
+          placeholder="Email"
+          value={newUser.Mail}
+          onChange={handleInputChange}
+          className="border p-2 rounded mr-2"
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          value={newUser.password}
+          onChange={handleInputChange}
+          className="border p-2 rounded mr-2"
+        />
+        <select
+          name="role"
+          value={newUser.role}
+          onChange={handleInputChange}
+          className="border p-2 rounded mr-2"
+        >
+          <option value="main">main</option>
+          <option value="admin">admin</option>
+        </select>
+        <button onClick={addUser} className="bg-green-500 text-white px-4 py-2 rounded">
+          Add User
+        </button>
+      </div>
 
-      {role != "user" && (
-        <table className="min-w-full table-auto border-collapse shadow-lg bg-white rounded-lg overflow-hidden">
-          <thead>
-            <tr className="bg-gray-800 text-white">
-              <th className="py-3 px-4 text-left">Mail</th>
-              <th className="py-3 px-4 text-left">Password</th>
-              <th className="py-3 px-4 text-left">Role</th>
-              <th className="py-3 px-4 text-left">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user.Mail} className="border-b">
-                <td className="py-3 px-4">
-                  {editingUser === user.Mail ? (
-                    <input
-                      type="email"
-                      name="Mail"
-                      value={editedUserData.Mail}
-                      onChange={handleEditInputChange} // Allow editing of email
-                      className="border p-2 rounded"
-                    />
-                  ) : (
-                    user.Mail
-                  )}
-                </td>
-                <td className="py-3 px-4">
-                  {editingUser === user.Mail ? (
-                    <input
-                      type="password"
-                      name="password"
-                      value={editedUserData.password}
-                      onChange={handleEditInputChange} // Allow editing of password
-                      className="border p-2 rounded"
-                    />
-                  ) : (
-                    "********" // Hide password for display
-                  )}
-                </td>
-                <td className="py-3 px-4">
-                  {editingUser === user.Mail ? (
-                    <select
-                      name="role"
-                      value={editedUserData.role}
-                      onChange={handleEditInputChange}
-                      className="border p-2 rounded"
+      <table className="min-w-full table-auto border-collapse shadow-lg bg-white rounded-lg overflow-hidden">
+        <thead>
+          <tr className="bg-gray-800 text-white">
+            <th className="py-3 px-4 text-left">Mail</th>
+            <th className="py-3 px-4 text-left">Password</th>
+            <th className="py-3 px-4 text-left">Role</th>
+            <th className="py-3 px-4 text-left">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredUsers.map((user) => (
+            <tr key={user.Mail} className="border-b">
+              <td className="py-3 px-4">
+                {editingUser === user.Mail ? (
+                  <input
+                    type="email"
+                    name="Mail"
+                    value={editedUserData.Mail}
+                    onChange={handleEditInputChange} // Allow editing of email
+                    className="border p-2 rounded"
+                  />
+                ) : (
+                  user.Mail
+                )}
+              </td>
+              <td className="py-3 px-4">
+                {editingUser === user.Mail ? (
+                  <input
+                    type="password"
+                    name="password"
+                    value={editedUserData.password}
+                    onChange={handleEditInputChange} // Allow editing of password
+                    className="border p-2 rounded"
+                  />
+                ) : (
+                  "********" // Hide password for display
+                )}
+              </td>
+              <td className="py-3 px-4">
+                {editingUser === user.Mail ? (
+                  <select
+                    name="role"
+                    value={editedUserData.role}
+                    onChange={handleEditInputChange}
+                    className="border p-2 rounded"
+                  >
+                    <option value="main">main</option>
+                    <option value="admin">admin</option>
+                  </select>
+                ) : (
+                  user.role
+                )}
+              </td>
+              <td className="py-3 px-4">
+                {editingUser === user.Mail ? (
+                  <>
+                    <button className="bg-green-500 text-white px-4 py-2 rounded mr-2" onClick={updateUserRole}>
+                      Save
+                    </button>
+                    <button className="bg-gray-500 text-white px-4 py-2 rounded" onClick={() => setEditingUser(null)}>
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
+                      onClick={() => handleEdit(user)}
                     >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  ) : (
-                    user.role
-                  )}
-                </td>
-                <td className="py-3 px-4">
-                  {editingUser === user.Mail ? (
-                    <>
-                      <button
-                        className="bg-green-500 text-white px-4 py-2 rounded mr-2"
-                        onClick={updateUserRole}
-                      >
-                        Save
-                      </button>
-                      <button
-                        className="bg-gray-500 text-white px-4 py-2 rounded"
-                        onClick={() => setEditingUser(null)}
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    role != "user" && (
-                      <>
-                        <button
-                          className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
-                          onClick={() => handleEdit(user)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="bg-red-500 text-white px-4 py-2 rounded"
-                          onClick={() => deleteUser(user.Mail)}
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+                      Edit
+                    </button>
+                    <button className="bg-red-500 text-white px-4 py-2 rounded" onClick={() => deleteUser(user.Mail)}>
+                      Delete
+                    </button>
+                  </>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };

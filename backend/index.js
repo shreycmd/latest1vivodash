@@ -128,7 +128,7 @@ app.get("/",(req,res)=>{
            
         });
       }else{
-      const token=jwt.sign({id:result.Mail},jwtSecret,{expiresIn:"1h"})
+      const token=jwt.sign({id:result.Mail},jwtSecret,{expiresIn:"2h"})
       return res.json({token,Mail,role:result.role})
       }
     } catch (error) {
@@ -652,7 +652,7 @@ app.get('/campaign',async (req, res) => {
     }
   });
 
-app.put("/campaign/:Name",verifyToken,async (req,res)=>{
+app.put("/campaign/:Name",convertProductIdsToNames,verifyToken,async (req,res)=>{
     const search_param=req.params.Name;
     const {Name,Desc,FortuneWheel,ScratchCard,Start_date,End_date,Products}=req.body;
     try {
@@ -941,7 +941,7 @@ async function processBatch(cmodel, batch, cname, prizeCounts) {
         const randomWheelPrize = availableWheelPrizes.pop(); // Use from the shuffled array
         record.Wheelprize = randomWheelPrize;
       } else {
-        record.Wheelprize = "BadLuck";
+        record.Wheelprize = "HardLuck";
       }
 
       // 2. Distribute scratch prize
@@ -949,7 +949,7 @@ async function processBatch(cmodel, batch, cname, prizeCounts) {
         const randomScratchPrize = availableScratchPrizes.pop(); // Use from the shuffled array
         record.Scratchprize = randomScratchPrize;
       } else {
-        record.Scratchprize = "BadLuck";
+        record.Scratchprize = "HardLuck";
       }
 
       uniqueResults.push(record);
@@ -996,10 +996,13 @@ const unlinkFile = async (filePath) => {
 };
 
 app.get('/export-citems', verifyToken,async (req, res) => {
-  console.log(req.query);
+
   try {
       // Get the condition from query parameters
-      const condition = req.query.condition || ''; // Use query params to pass the condition
+      const condition = req.query.condition || ''
+      const role=req.query.role;
+   
+       // Use query params to pass the condition
       const col = getCampaignModel(condition);
       
       // Create a cursor to find documents in batches
@@ -1018,13 +1021,15 @@ app.get('/export-citems', verifyToken,async (req, res) => {
       // Process each item in the cursor
       cursor.on('data', (item) => {
           csvStream.write({
-              Campaign_Name: item.Campaign_Name,
-              Selectedproduct: item.Selectedproduct,
-              WinnerImei: item.WinnerImei,
+            Campaign_Name: item.Campaign_Name,
+            Selectedproduct: item.Selectedproduct,
+            WinnerImei: item.WinnerImei,
+            Claimedon: item.Claimedon ? new Date(item.Claimedon).toLocaleDateString() : '',
+            Addedon: item.Addedon ? new Date(item.Addedon).toLocaleDateString() : '',
+            ...(role == "main" && { 
               Wheelprize: item.Wheelprize,
-              Scratchprize: item.Scratchprize,
-              Claimedon: item.Claimedon ? new Date(item.Claimedon).toLocaleDateString() : '',
-              Addedon: item.Addedon ? new Date(item.Addedon).toLocaleDateString() : '',
+              Scratchprize: item.Scratchprize 
+            }) 
           });
       });
 

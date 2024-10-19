@@ -16,7 +16,7 @@ const fetchWithAuth = async (url, options = {}) => {
 
     // Make the request with the headers
     const response = await fetch(url, { ...options, headers });
-    console.log(response.statusText)
+   console.log(response.statusText)
     // Check for HTTP errors
     if (!response.ok) {
         if (response.status === 401) {
@@ -25,7 +25,7 @@ const fetchWithAuth = async (url, options = {}) => {
             window.location.href = '/';
         }
         
-        throw new Error(`HTTP error! status: ${response.text}`);
+        throw new Error(`HTTP error! status: ${response.statusText}`);
     }
 
     // Return the response object or parsed JSON as needed

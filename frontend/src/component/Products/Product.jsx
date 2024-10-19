@@ -35,7 +35,7 @@ const Product = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewProduct({ ...newProduct, [name]: value });
+    setNewProduct({ ...newProduct, [name]: name === "Name" ? value.trim() : value });
   };
 
   const addProduct = async (e) => {
