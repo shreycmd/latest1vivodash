@@ -1315,16 +1315,17 @@ app.post("/nc/:cname", uploading.single('invoice'), async (req, res) => {
   const WinModel = getWinModel(collectionName);
 
   let { WinnerImei, Claimedon, WinnerName, Prize, location } = req.body;
+
+  console.log(Claimedon);
   Claimedon = new Date(Claimedon).toLocaleDateString();
-  // Get the path of the uploaded file
-  
+  console.log(Claimedon);
+
   const invoicePath = req.file ? req.file.path : null;
 
   try {
       
       const createdRecord = await WinModel.create({
           WinnerImei,
-          Claimedon,
           WinnerName,
           location,
           Prize,
@@ -1333,7 +1334,7 @@ app.post("/nc/:cname", uploading.single('invoice'), async (req, res) => {
       
       const crecords = await cmodel.findOneAndUpdate(
           { WinnerImei },
-          { Status: true, Claimedon, WinnerName },
+          { Status: true, WinnerName },
           { new: true }
       );
 

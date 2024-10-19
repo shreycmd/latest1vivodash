@@ -63,8 +63,7 @@ required:false
   },
   Claimedon: { 
     type: Date, 
-    default: null,
-    required: false 
+    default: true,
   },
   
   WinnerName:{
