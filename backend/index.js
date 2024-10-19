@@ -1316,9 +1316,7 @@ app.post("/nc/:cname", uploading.single('invoice'), async (req, res) => {
 
   let { WinnerImei, Claimedon, WinnerName, Prize, location } = req.body;
 
-  console.log(Claimedon);
-  Claimedon = new Date(Claimedon).toLocaleDateString();
-  console.log(Claimedon);
+  Claimedon = new Date(parseInt(Claimedon)).toLocaleDateString();
 
   const invoicePath = req.file ? req.file.path : null;
 
