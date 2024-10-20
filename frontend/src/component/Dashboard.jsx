@@ -131,6 +131,7 @@ const Dashboard = () => {
               >
                 {item.claimed}
               </td>
+              
               <td className="py-3 px-4">{item.unclaimed}</td>
               <td className="py-3 px-4">{item.totalProducts}</td>
             </tr>

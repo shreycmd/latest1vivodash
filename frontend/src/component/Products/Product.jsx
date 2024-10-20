@@ -42,26 +42,34 @@ const Product = () => {
     e.preventDefault();
     setVisible(false);
     try {
-      const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/product', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/product', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(newProduct),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to add product');
-      }
-
+  
       const result = await response.json();
-      alert(result.message);
+  
+      if (!response.ok) {
+        if (result.message === "Product already exists") {
+          alert("Product with the same name or unique identifier already exists.");
+        } else {
+          
+          throw new Error(result.error );
+        }
+        return;
+      }
+  
+      alert(result.message);  // Show success message if added successfully
       setProducts((prevProducts) => [...prevProducts, newProduct]);
       setNewProduct({ Name: '', Type: '', U_id: '' }); // Reset the new product state
     } catch (err) {
       setError(err.message);
     }
   };
+  
 
   const handleFileChange = (e) => {
     setCsvFile(e.target.files[0]);

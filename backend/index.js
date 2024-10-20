@@ -766,7 +766,7 @@ app.post("/product",async (req, res) => {
   } catch (error) {
     // Handle any errors during database operation
     return res.status(500).json({
-      message: "Error saving product",
+      
       error: error.message,
     });
   }
@@ -1170,6 +1170,9 @@ const WinModelSchema = new mongoose.Schema({
     type: String,
     default: null,
     required: false
+  },Pno:{
+    type:String,
+    required:false
   },
   location: { 
     type: String, 
@@ -1314,9 +1317,9 @@ app.post("/nc/:cname", uploading.single('invoice'), async (req, res) => {
   const collectionName = `win_${cname}`;
   const WinModel = getWinModel(collectionName);
 
-  let { WinnerImei, Claimedon, WinnerName, Prize, location } = req.body;
-
-  Claimedon = new Date(parseInt(Claimedon)).toLocaleDateString();
+  let { WinnerImei, Claimedon, WinnerName, Prize, location,Pno } = req.body;
+ 
+  Claimedon = new Date(parseInt(Claimedon));
 
   const invoicePath = req.file ? req.file.path : null;
 
@@ -1325,7 +1328,8 @@ app.post("/nc/:cname", uploading.single('invoice'), async (req, res) => {
       const createdRecord = await WinModel.create({
           WinnerImei,
           WinnerName,
-          Claimedon
+          Claimedon,
+          Pno,
           location,
           Prize,
           invoice: invoicePath // Store the image path in the database

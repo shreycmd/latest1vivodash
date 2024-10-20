@@ -82,6 +82,7 @@ const Claimedproduct = ({ claimedProducts, cmpname }) => {
             <th className="py-3 px-4 text-left">Winner IMEI</th>
             <th className="py-3 px-4 text-left">Claimed On</th>
             <th className="py-3 px-4 text-left">Location</th>
+            <th className="py-3 px-4 text-left">Phone Number</th>
             <th className="py-3 px-4 text-left">Prize</th>
             <th className="py-3 px-4 text-left">Invoice</th>
           </tr>
@@ -93,6 +94,7 @@ const Claimedproduct = ({ claimedProducts, cmpname }) => {
               <td className="py-3 px-4">{item.WinnerImei}</td>
               <td className="py-3 px-4">{new Date(item.Claimedon).toLocaleDateString()}</td>
               <td className="py-3 px-4">{item.location}</td>
+              <td className="py-3 px-4">{item.Pno}</td>
               <td className="py-3 px-4">{item.Prize}</td>
               <td className="py-3 px-4">
                 <button onClick={() => displayImg(item.invoice)}>View</button>

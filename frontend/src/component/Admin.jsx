@@ -45,12 +45,12 @@ const Admin = () => {
 
   const addUser = async () => {
     try {
-      // Allow the main user to create both main and admin accounts
-      if (role === "admin" && newUser.role !== "admin") {
-        setErr("Admin users can only create admin accounts.");
+      // Admin can only create admin accounts
+      if (newUser.role !== "admin") {
+        setErr("Invalid role selected.");
         return;
       }
-
+  
       const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL + "/Admin", {
         method: "POST",
         headers: {
@@ -58,7 +58,7 @@ const Admin = () => {
         },
         body: JSON.stringify(newUser),
       });
-
+  
       const res = await response.json();
       if (response.ok) {
         setUsers([...users, res.data]);
@@ -67,16 +67,22 @@ const Admin = () => {
         setErr(res.message);
       }
     } catch (error) {
-      setErr(error.message);
+      setErr("An error occurred while adding the user.");
     }
   };
+  
 
   const updateUserRole = async () => {
     if (!editingUser) {
       setErr("No user is being edited.");
       return;
     }
-
+  
+    if (editedUserData.role !== "admin") {
+      setErr("Invalid role change.");
+      return;
+    }
+  
     try {
       const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL + `/Admin/${editedUserData.Mail}`, {
         method: "PUT",
@@ -85,6 +91,7 @@ const Admin = () => {
         },
         body: JSON.stringify(editedUserData),
       });
+      
       const res = await response.json();
       if (response.ok) {
         setUsers(users.map((user) => (user.Mail === editedUserData.Mail ? { ...user, ...editedUserData } : user)));
@@ -94,30 +101,33 @@ const Admin = () => {
         setErr(res.message);
       }
     } catch (error) {
-      setErr(error.message);
+      setErr("An error occurred while updating the user.");
     }
   };
-
+  
   const deleteUser = async (Mail) => {
     try {
-      // Allow only main users to delete accounts
-      if (role === "main") {
-        const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL + `/Admin/${Mail}`, {
-          method: "DELETE",
-        });
-        const res = await response.json();
-        if (response.ok) {
-          setUsers(users.filter((user) => user.Mail !== Mail));
-        } else {
-          setErr(res.message);
-        }
+      // Find the user to be deleted
+      
+  
+      // Make the delete request to the backend
+      const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL + `/Admin/${Mail}`, {
+        method: "DELETE",
+      });
+  
+      const res = await response.json();
+      if (response.ok) {
+        // Remove the user from the state after successful deletion
+        setUsers(users.filter((user) => user.Mail !== Mail));
       } else {
-        setErr("Only main users can delete other users.");
+        setErr(res.message);  // Show backend error if any
       }
     } catch (error) {
-      setErr(error.message);
+      setErr("An error occurred while deleting the user.");
     }
   };
+  
+  
 
   const handleEdit = (user) => {
     setEditingUser(user.Mail);
@@ -155,7 +165,7 @@ const Admin = () => {
           onChange={handleInputChange}
           className="border p-2 rounded mr-2"
         >
-          <option value="main">main</option>
+         {role=="admin"? null:<option value="main">main</option>}
           <option value="admin">admin</option>
         </select>
         <button onClick={addUser} className="bg-green-500 text-white px-4 py-2 rounded">
