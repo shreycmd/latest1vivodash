@@ -18,10 +18,11 @@ const Product = () => {
   const [csvFile, setCsvFile] = useState(null);
   const [imeiOrSerial, setImeiOrSerial] = useState(''); // State for IMEI or Serial Number
 
+  // Fetch products when currentPage changes
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL+`/product?limit=20&page=${currentPage}`);
+        const response = await fetchwithauth(import.meta.env.VITE_BACKEND_URL + `/product?limit=20&page=${currentPage}`);
         const data = await response.json();
         setProducts(data.data);
         setTotalPages(data.totalPages);
@@ -33,52 +34,62 @@ const Product = () => {
     fetchProducts();
   }, [currentPage]);
 
+  // Handle input change for adding new product
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewProduct({ ...newProduct, [name]: name === "Name" ? value.trim() : value });
   };
 
+  // Add a new product
   const addProduct = async (e) => {
     e.preventDefault();
     setVisible(false);
+
+    // Trim spaces in the product name before submitting
+    const trimmedProduct = {
+      ...newProduct,
+      Name: newProduct.Name.trim(),
+    };
+
     try {
       const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/product', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newProduct),
+        body: JSON.stringify(trimmedProduct),
       });
-  
+
       const result = await response.json();
-  
+
       if (!response.ok) {
         if (result.message === "Product already exists") {
           alert("Product with the same name or unique identifier already exists.");
         } else {
-          
-          throw new Error(result.error );
+          throw new Error(result.error);
         }
         return;
       }
-  
+
       alert(result.message);  // Show success message if added successfully
-      setProducts((prevProducts) => [...prevProducts, newProduct]);
-      setNewProduct({ Name: '', Type: '', U_id: '' }); // Reset the new product state
+      setProducts((prevProducts) => [...prevProducts, trimmedProduct]);
+      setNewProduct({ Name: '', Type: '', U_id: '' }); // Reset form after submission
     } catch (err) {
       setError(err.message);
     }
   };
-  
 
+  // Handle file change for CSV upload
   const handleFileChange = (e) => {
     setCsvFile(e.target.files[0]);
   };
 
+  // Handle input change for IMEI or Serial Number
   const handleImeiOrSerialChange = (e) => {
     setImeiOrSerial(e.target.value);
   };
 
+  // Submit the bulk upload
   const submitBulkUpload = async () => {
     if (!csvFile || !imeiOrSerial) {
       alert('Please select a CSV file and enter IMEI or Serial Number.');
@@ -90,7 +101,7 @@ const Product = () => {
     formData.append('uniqueIdentifier', imeiOrSerial); // Append the IMEI or Serial Number
 
     try {
-      const response = await fetch(import.meta.env.VITE_BACKEND_URL+'/upload-products', {
+      const response = await fetch(import.meta.env.VITE_BACKEND_URL + '/upload-products', {
         method: 'POST',
         body: formData,
       });
@@ -103,7 +114,7 @@ const Product = () => {
       alert(result.message);
       setBulkUploadVisible(false);
       setCsvFile(null);
-      setImeiOrSerial(''); // Reset the IMEI/Serial input field
+      setImeiOrSerial(''); // Reset the input fields
     } catch (err) {
       setError(err.message);
     }

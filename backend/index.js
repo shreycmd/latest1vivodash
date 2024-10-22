@@ -864,6 +864,7 @@ app.post('/upload-citem', verifyToken, upload.single('file'), async (req, res, n
 
     // Process each CSV row
     stream.on('data', (data) => {
+      data.WinnerImei = data.WinnerImei.trim()
       if (validateCitemData(data)) {
         const imei = data.WinnerImei;
         const productFromCSV = data.Selectedproduct; // Extract the Product field from the CSV file
@@ -922,42 +923,37 @@ async function processBatch(cmodel, batch, cname, prizeCounts) {
   let uniqueResults = [];
   let skippedCount = 0;
 
-  // Initialize available prizes with the quantities remaining
-  let availableWheelPrizes = expandPrizes(prizeCounts.wheel);
-  let availableScratchPrizes = expandPrizes(prizeCounts.scratch);
-
-  // Shuffle the expanded prize arrays to ensure randomness
-  availableWheelPrizes = shuffleArray(availableWheelPrizes);
-  availableScratchPrizes = shuffleArray(availableScratchPrizes);
-
+  // Iterate over each record in the batch
   for (const record of batch) {
     const imei = record.WinnerImei;
 
+    // Only process if IMEI is not already in the database
     if (!existingIMEIs.has(imei)) {
       record.Campaign_Name = cname;
 
       // 1. Distribute wheel prize
-      if (availableWheelPrizes.length > 0) {
-        const randomWheelPrize = availableWheelPrizes.pop(); // Use from the shuffled array
-        record.Wheelprize = randomWheelPrize;
+      const availableWheelPrize = getRandomPrize(prizeCounts.wheel);
+      if (availableWheelPrize) {
+        record.Wheelprize = availableWheelPrize;
       } else {
-        record.Wheelprize = "HardLuck";
+        record.Wheelprize = "HardLuck"; // No more wheel prizes available
       }
 
       // 2. Distribute scratch prize
-      if (availableScratchPrizes.length > 0) {
-        const randomScratchPrize = availableScratchPrizes.pop(); // Use from the shuffled array
-        record.Scratchprize = randomScratchPrize;
+      const availableScratchPrize = getRandomPrize(prizeCounts.scratch);
+      if (availableScratchPrize) {
+        record.Scratchprize = availableScratchPrize;
       } else {
-        record.Scratchprize = "HardLuck";
+        record.Scratchprize = "HardLuck"; // No more scratch prizes available
       }
 
-      uniqueResults.push(record);
+      uniqueResults.push(record); // Add to results
     } else {
       skippedCount++; // Count skipped records due to duplicate IMEIs in DB
     }
   }
 
+  // Insert the records if there are any unique results
   if (uniqueResults.length > 0) {
     await cmodel.insertMany(uniqueResults);
   }
@@ -965,15 +961,21 @@ async function processBatch(cmodel, batch, cname, prizeCounts) {
   return { insertedCount: uniqueResults.length, skippedCount };
 }
 
-// Function to expand the prize list based on quantity
-function expandPrizes(prizeCounts) {
-  const expandedPrizes = [];
-  for (const prizeName in prizeCounts) {
-    for (let i = 0; i < prizeCounts[prizeName]; i++) {
-      expandedPrizes.push(prizeName);
-    }
+// Function to get a random prize if available and decrease the quantity
+function getRandomPrize(prizeList) {
+  const availablePrizes = Object.keys(prizeList).filter(prize => prizeList[prize] > 0);
+  
+  if (availablePrizes.length === 0) {
+    return null; // No available prizes
   }
-  return expandedPrizes;
+
+  // Randomly select a prize
+  const randomPrize = availablePrizes[Math.floor(Math.random() * availablePrizes.length)];
+
+  // Decrease the quantity of the selected prize
+  prizeList[randomPrize]--;
+
+  return randomPrize;
 }
 
 // Fisher-Yates Shuffle to efficiently shuffle the array
@@ -1072,7 +1074,8 @@ app.post('/upload-products', upload.single('file'), (req, res) => {
   fs.createReadStream(req.file.path)
     .pipe(csv())
     .on('data', async (data) => {
-      // Add u_id to each record
+      // Trim spaces from the Name and any other fields that may need it
+      data.Name = data.Name.trim();
       data.U_id = uid;
 
       // Validate data and push to results or errors
