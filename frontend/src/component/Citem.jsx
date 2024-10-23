@@ -100,7 +100,7 @@ const CampaignForm = ({
         <input
           type="text"
           value={winnerImei}
-          onChange={(e) => setWinnerImei(e.target.value)}
+          onChange={(e) => setWinnerImei(e.target.value.trim())}
           required
           className="w-fit px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
